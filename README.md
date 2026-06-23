@@ -49,7 +49,22 @@ At runtime the project generates scenario route files and `.sumocfg` files under
 3. Install dependencies with `pip install -r requirements.txt`.
 4. Add the project root as a source root if PyCharm does not detect it automatically.
 5. Set environment variable `SUMO_HOME` in each run configuration.
-6. Use module mode for runs:
+6. Prefer the Python files under `run/` for right-click execution in PyCharm:
+
+```text
+run/check_python_environment.py
+run/check_sumo_assets.py
+run/train_trans_beta_ppo.py
+run/evaluate_trans_beta_ppo.py
+run/train_meta_trans_beta_ppo.py
+run/evaluate_meta_trans_beta_ppo.py
+run/run_chapter4_comparison.py
+run/run_chapter5_baselines.py
+```
+
+Each file has editable constants such as `SMOKE`, `CONFIG_PATH`, `CHECKPOINT`, and `EPISODES` near the top.
+
+Module mode is also supported:
 
 ```text
 Module name: src.cli.train
@@ -61,7 +76,7 @@ For full SUMO training, remove `--smoke`.
 
 ## Smoke Runs
 
-For a step-by-step guide that explains what to train, test, compare, and where outputs are saved, see [docs/RUNBOOK.md](docs/RUNBOOK.md).
+For a step-by-step guide that explains what to train, test, compare, and where outputs are saved, see [docs/RUNBOOK.md](docs/RUNBOOK.md). For the folder/module layout, see [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md).
 
 Smoke mode validates the Python/algorithm/logging path without launching SUMO:
 

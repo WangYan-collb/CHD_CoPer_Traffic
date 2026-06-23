@@ -35,5 +35,20 @@ def sumo_binary(gui: bool = False) -> str:
     return str(candidate)
 
 
+def netconvert_binary() -> str:
+    binary = shutil.which("netconvert")
+    if binary:
+        return binary
+    sumo_home = os.environ.get("SUMO_HOME")
+    if not sumo_home:
+        raise SumoUnavailableError("SUMO_HOME is not set; install SUMO and export SUMO_HOME first")
+    candidate = Path(sumo_home) / "bin" / "netconvert"
+    if os.name == "nt":
+        candidate = candidate.with_suffix(".exe")
+    if not candidate.exists():
+        raise SumoUnavailableError(f"SUMO netconvert binary not found: {candidate}")
+    return str(candidate)
+
+
 def build_sumo_command(sumocfg: str | Path, gui: bool = False) -> list[str]:
     return [sumo_binary(gui=gui), "-c", str(sumocfg), "--start", "--quit-on-end"]

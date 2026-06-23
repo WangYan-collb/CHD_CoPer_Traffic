@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<edges>
+  <edge id="E1" from="main_start" to="merge_start" numLanes="3" speed="33.33" priority="1" />
+  <edge id="E4" from="merge_start" to="merge_end" numLanes="3" speed="33.33" priority="1" />
+  <edge id="E6" from="merge_end" to="downstream_end" numLanes="3" speed="33.33" priority="1" />
+  <edge id="E2" from="ramp_start" to="ramp_mid" numLanes="1" speed="33.33" priority="1" />
+  <edge id="E3" from="ramp_mid" to="merge_start" numLanes="1" speed="33.33" priority="1" />
+</edges>

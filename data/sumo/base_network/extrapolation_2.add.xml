@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<additional>
+  <laneAreaDetector id="e2_extrapolation_2_upstream_0" lane="E1_0" pos="6900.0" endPos="7400.0" freq="30" file="data/sumo/detectors/extrapolation_2_upstream_0.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_upstream_1" lane="E1_1" pos="6900.0" endPos="7400.0" freq="30" file="data/sumo/detectors/extrapolation_2_upstream_1.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_upstream_2" lane="E1_2" pos="6900.0" endPos="7400.0" freq="30" file="data/sumo/detectors/extrapolation_2_upstream_2.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_upstream_3" lane="E1_3" pos="6900.0" endPos="7400.0" freq="30" file="data/sumo/detectors/extrapolation_2_upstream_3.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_upstream_4" lane="E1_4" pos="6900.0" endPos="7400.0" freq="30" file="data/sumo/detectors/extrapolation_2_upstream_4.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_merge_0" lane="E4_0" pos="0.0" endPos="150.0" freq="30" file="data/sumo/detectors/extrapolation_2_merge_0.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_merge_1" lane="E4_1" pos="0.0" endPos="150.0" freq="30" file="data/sumo/detectors/extrapolation_2_merge_1.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_merge_2" lane="E4_2" pos="0.0" endPos="150.0" freq="30" file="data/sumo/detectors/extrapolation_2_merge_2.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_merge_3" lane="E4_3" pos="0.0" endPos="150.0" freq="30" file="data/sumo/detectors/extrapolation_2_merge_3.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_merge_4" lane="E4_4" pos="0.0" endPos="150.0" freq="30" file="data/sumo/detectors/extrapolation_2_merge_4.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_downstream_0" lane="E6_0" pos="50.0" endPos="600.0" freq="30" file="data/sumo/detectors/extrapolation_2_downstream_0.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_downstream_1" lane="E6_1" pos="50.0" endPos="600.0" freq="30" file="data/sumo/detectors/extrapolation_2_downstream_1.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_downstream_2" lane="E6_2" pos="50.0" endPos="600.0" freq="30" file="data/sumo/detectors/extrapolation_2_downstream_2.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_downstream_3" lane="E6_3" pos="50.0" endPos="600.0" freq="30" file="data/sumo/detectors/extrapolation_2_downstream_3.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_downstream_4" lane="E6_4" pos="50.0" endPos="600.0" freq="30" file="data/sumo/detectors/extrapolation_2_downstream_4.xml" />
+  <laneAreaDetector id="e2_extrapolation_2_ramp_0" lane="E3_0" pos="0.0" endPos="175.0" freq="30" file="data/sumo/detectors/extrapolation_2_ramp_0.xml" />
+</additional>

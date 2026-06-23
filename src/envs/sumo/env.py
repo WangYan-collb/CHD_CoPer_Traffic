@@ -9,7 +9,7 @@ from src.envs.sumo.config_builder import SumoConfigPaths, build_sumocfg
 from src.envs.sumo.state_calculator import average_metrics, build_state_vector, sample_network_metrics, smoke_metrics
 from src.envs.sumo.observations import StateHistory
 from src.envs.sumo.traci_client import SumoUnavailableError, build_sumo_command, load_traci
-from src.project.paths import GENERATED_ROUTES_DIR
+from src.project.paths import BASE_NETWORK_DIR, GENERATED_ROUTES_DIR
 from src.rewards.combined_reward import combined_reward
 from src.scenarios.scenario_config import ScenarioConfig
 from src.scenarios.route_generator import generate_route_file
@@ -38,8 +38,8 @@ class SumoMovingBottleneckEnv:
         self.state_dim = state_dim
         self.smoke = smoke
         self.aggregation_time_s = aggregation_time_s
-        self.net_file = Path(net_file)
-        self.additional_file = Path(additional_file)
+        self.net_file = self._scenario_asset_path(Path(net_file), ".net.xml", "test1.net.xml")
+        self.additional_file = self._scenario_asset_path(Path(additional_file), ".add.xml", "E2_info.xml")
         self.use_gui = use_gui
         self.history = StateHistory(sequence_length, state_dim)
         self.step_count = 0
@@ -106,6 +106,12 @@ class SumoMovingBottleneckEnv:
         if self.traci is not None:
             self.traci.close(False)
             self.traci = None
+
+    def _scenario_asset_path(self, configured: Path, suffix: str, legacy_name: str) -> Path:
+        scenario_file = BASE_NETWORK_DIR / f"{self.scenario.name}{suffix}"
+        if scenario_file.exists() and configured.name == legacy_name:
+            return scenario_file
+        return configured
 
     def _real_sumo_step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict[str, object]]:
         traci = self.traci

@@ -6,13 +6,14 @@ Recommended first run order:
 
 1. `check_sumo_assets.py`
 2. `check_python_environment.py`
-3. `generate_sumo_routes.py`
-4. `train_trans_beta_ppo.py`
-5. `evaluate_trans_beta_ppo.py`
-6. `run_chapter4_comparison.py`
-7. `train_meta_trans_beta_ppo.py`
-8. `evaluate_meta_trans_beta_ppo.py`
-9. `run_chapter5_baselines.py`
+3. `build_sumo_network.py`
+4. `generate_sumo_routes.py`
+5. `train_trans_beta_ppo.py`
+6. `evaluate_trans_beta_ppo.py`
+7. `run_chapter4_comparison.py`
+8. `train_meta_trans_beta_ppo.py`
+9. `evaluate_meta_trans_beta_ppo.py`
+10. `run_chapter5_baselines.py`
 
 Each entry has editable constants at the top:
 

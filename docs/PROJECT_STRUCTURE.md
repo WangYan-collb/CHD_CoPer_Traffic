@@ -51,6 +51,7 @@ src/scenarios/
   route_generator.py          SUMO route file generation
   vehicle_params.py           HDV/CAV SUMO vehicle type parameters
   road_network.py             Route edge names and road design constants
+  sumo_network.py             PlainXML network, detector and sumocfg builder
 
 src/rewards/
   combined_reward.py          Main reward aggregation

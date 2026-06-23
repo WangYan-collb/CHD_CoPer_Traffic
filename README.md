@@ -54,6 +54,7 @@ At runtime the project generates scenario route files and `.sumocfg` files under
 ```text
 run/check_python_environment.py
 run/check_sumo_assets.py
+run/build_sumo_network.py
 run/train_trans_beta_ppo.py
 run/evaluate_trans_beta_ppo.py
 run/train_meta_trans_beta_ppo.py

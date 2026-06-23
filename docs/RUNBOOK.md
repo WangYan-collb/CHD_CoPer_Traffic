@@ -75,6 +75,25 @@ data/sumo/generated_routes/<scenario>.sumocfg
 
 `generated_routes` 是运行产物，不需要提交到 GitHub。
 
+如果暂时拿不到远端 `new_mvsl_pro_CAVTest/configuration` 原始文件，可以先右键运行：
+
+```text
+run/build_sumo_network.py
+```
+
+该入口按论文 M25 合流区设置生成 SUMO PlainXML 路网源文件，并在本机安装 SUMO 后调用 `netconvert` 生成可运行的 `.net.xml`。生成的场景路网包括：
+
+```text
+data/sumo/base_network/base.net.xml
+data/sumo/base_network/interpolation_1.net.xml
+data/sumo/base_network/interpolation_2.net.xml
+data/sumo/base_network/interpolation_3.net.xml
+data/sumo/base_network/extrapolation_1.net.xml
+data/sumo/base_network/extrapolation_2.net.xml
+```
+
+其中 `base.net.xml` 会同步复制为 `test1.net.xml`，`base.add.xml` 会同步复制为 `E2_info.xml`，兼容默认训练配置。第五章不同场景会优先使用对应的场景路网，例如 `extrapolation_1.net.xml` 是 3 车道低 CAV 渗透率外推场景，`extrapolation_2.net.xml` 包含下游车道收缩设置。
+
 ## 4. PyCharm 快速运行入口
 
 推荐直接右键运行这些文件：
@@ -82,6 +101,7 @@ data/sumo/generated_routes/<scenario>.sumocfg
 ```text
 run/check_sumo_assets.py
 run/check_python_environment.py
+run/build_sumo_network.py
 run/generate_sumo_routes.py
 run/train_trans_beta_ppo.py
 run/evaluate_trans_beta_ppo.py

@@ -1,0 +1,9 @@
+[project]
+name = "chd-coper-traffic"
+version = "0.1.0"
+description = "SUMO reproduction project for Trans-Beta-PPO and MAML-Trans-Beta-PPO moving bottleneck VSL control."
+requires-python = ">=3.9,<3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

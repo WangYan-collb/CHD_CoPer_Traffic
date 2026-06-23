@@ -1,0 +1,16 @@
+run_name: classic_vsl
+scenario: base
+smoke: false
+seed: 20260623
+environment:
+  sequence_length: 30
+  state_dim: 17
+  action_dim: 3
+algorithm:
+  name: classic_vsl
+  critical_density: 27.0
+training:
+  episodes: 1
+  update_every_steps: 1
+outputs:
+  root: experiments/baselines

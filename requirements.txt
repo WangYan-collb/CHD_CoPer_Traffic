@@ -1,0 +1,11 @@
+# Recommended interpreter for PyCharm: Python 3.9.17
+# Recommended external SUMO runtime: SUMO 1.25.0
+# If CUDA 12.1 is available on Windows/Linux, install the matching PyTorch wheel from pytorch.org.
+torch==2.1.0
+numpy==1.26.3
+pandas==1.5.3
+pyyaml==6.0.1
+matplotlib==3.7.1
+pytest==7.4.4
+sumolib==1.25.0
+traci==1.25.0

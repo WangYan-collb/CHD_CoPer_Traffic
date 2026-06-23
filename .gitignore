@@ -1,0 +1,14 @@
+.venv/
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+experiments/
+data/sumo/generated_routes/
+*.pth
+*.pt
+*.ckpt
+*.csv
+*.xlsx
+*.xml
+!data/sumo/base_network/*.xml

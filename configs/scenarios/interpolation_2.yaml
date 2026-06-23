@@ -1,0 +1,6 @@
+name: interpolation_2
+lane_count: 5
+bottleneck_length_m: 150
+cav_ratio: 0.70
+main_flow: 4500
+ramp_flow: 2700

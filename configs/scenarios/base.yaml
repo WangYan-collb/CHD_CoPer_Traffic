@@ -1,0 +1,6 @@
+name: base
+lane_count: 5
+bottleneck_length_m: 150
+cav_ratio: 0.50
+main_flow: 4292
+ramp_flow: 2446

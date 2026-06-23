@@ -1,0 +1,22 @@
+run_name: td3
+scenario: base
+smoke: false
+seed: 20260623
+environment:
+  sequence_length: 30
+  state_dim: 17
+  action_dim: 3
+algorithm:
+  name: td3
+  lr: 0.0001
+  gamma: 0.99
+  tau: 0.005
+  policy_noise: 0.2
+  noise_clip: 0.5
+  exploration_noise: 0.1
+  batch_size: 64
+training:
+  episodes: 500
+  update_every_steps: 1
+outputs:
+  root: experiments/rl

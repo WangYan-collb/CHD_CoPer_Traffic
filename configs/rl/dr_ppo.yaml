@@ -1,0 +1,27 @@
+run_name: dr_ppo
+scenario: base
+smoke: false
+seed: 20260623
+environment:
+  sequence_length: 30
+  state_dim: 17
+  action_dim: 3
+algorithm:
+  name: dr_ppo
+  lr: 0.0001
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_epsilon: 0.15
+  value_coef: 0.5
+  entropy_coef: 0.01
+  update_epochs: 4
+  robustness_noise_std: 0.05
+domain_randomization:
+  main_flow_scale: [0.9, 1.1]
+  ramp_flow_scale: [0.9, 1.1]
+  cav_ratio_delta: [-0.1, 0.1]
+training:
+  episodes: 500
+  update_every_steps: 10
+outputs:
+  root: experiments/rl

@@ -1,0 +1,23 @@
+run_name: maml_trans_beta_ppo
+smoke: false
+seed: 20260623
+environment:
+  sequence_length: 30
+  state_dim: 17
+  action_dim: 3
+algorithm:
+  name: trans_beta_ppo
+  lr: 0.0001
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_epsilon: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.01
+  update_epochs: 4
+meta:
+  meta_lr: 0.0005
+  inner_steps: 3
+  meta_batch_size: 4
+  episodes: 500
+outputs:
+  root: experiments/meta_rl

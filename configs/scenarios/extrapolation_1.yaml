@@ -1,0 +1,6 @@
+name: extrapolation_1
+lane_count: 3
+bottleneck_length_m: 150
+cav_ratio: 0.10
+main_flow: 3500
+ramp_flow: 1800

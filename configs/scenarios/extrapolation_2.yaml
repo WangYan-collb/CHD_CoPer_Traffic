@@ -1,0 +1,6 @@
+name: extrapolation_2
+lane_count: 5
+bottleneck_length_m: 150
+cav_ratio: 1.00
+main_flow: 5100
+ramp_flow: 3100

@@ -1,0 +1,19 @@
+suite_name: chapter4_rl_comparison
+configs:
+  - configs/rl/continuous_ppo.yaml
+  - configs/rl/beta_ppo.yaml
+  - configs/rl/trans_beta_ppo.yaml
+  - configs/rl/td3.yaml
+scenarios:
+  - base
+  - interpolation_1
+  - interpolation_2
+  - interpolation_3
+  - extrapolation_1
+metrics:
+  - mean_speed
+  - queue_length
+  - density
+  - tet
+  - tit
+  - reward

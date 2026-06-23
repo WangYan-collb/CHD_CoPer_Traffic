@@ -48,6 +48,10 @@ def main(argv: list[str] | None = None) -> int:
         sequence_length=env_cfg["sequence_length"],
         state_dim=env_cfg["state_dim"],
         smoke=config["smoke"],
+        aggregation_time_s=int(env_cfg.get("aggregation_time_s", 30)),
+        net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
+        additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
+        use_gui=bool(env_cfg.get("use_gui", False)),
     )
 
     episode_count = int(config["training"]["episodes"])
@@ -58,13 +62,22 @@ def main(argv: list[str] | None = None) -> int:
         step = 0
         while not done:
             action, info = agent.select_action(state)
-            next_state, reward, terminated, truncated, _ = env.step(action)
+            next_state, reward, terminated, truncated, step_info = env.step(action)
             if algorithm_name == "td3":
                 agent.store_transition(state, action, reward, next_state, terminated or truncated)
             else:
                 agent.store_transition(state, action, info["log_prob"], reward, terminated or truncated, info["value"])
             total_reward += reward
-            logger.log_action({"episode": episode, "step": step, "a0": action[0], "a1": action[1], "a2": action[2]})
+            logger.log_action({
+                "episode": episode,
+                "step": step,
+                "a0": action[0],
+                "a1": action[1],
+                "a2": action[2],
+                "speed_limit_kmh": step_info.get("speed_limit_kmh"),
+                "longitudinal_gap_m": step_info.get("longitudinal_gap_m"),
+                "selected_cav_count": step_info.get("selected_cav_count"),
+            })
             state = next_state
             done = terminated or truncated
             step += 1
@@ -77,6 +90,9 @@ def main(argv: list[str] | None = None) -> int:
             "episode": episode,
             "reward": total_reward,
             "loss": loss_value,
+            "density": step_info.get("density"),
+            "speed_mps": step_info.get("speed_mps"),
+            "queue_m": step_info.get("queue_m"),
         })
     checkpoint = logger.checkpoint_dir / f"{algorithm_name}.pth"
     agent.save(checkpoint)

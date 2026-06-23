@@ -52,6 +52,10 @@ def main(argv: list[str] | None = None) -> int:
             sequence_length=env_cfg["sequence_length"],
             state_dim=env_cfg["state_dim"],
             smoke=config["smoke"],
+            aggregation_time_s=int(env_cfg.get("aggregation_time_s", 30)),
+            net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
+            additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
+            use_gui=bool(env_cfg.get("use_gui", False)),
         )
         state, _ = env.reset()
         total = 0.0

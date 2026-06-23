@@ -33,6 +33,15 @@ On Windows, set `SUMO_HOME` in system environment variables, for example:
 SUMO_HOME=C:\Program Files (x86)\Eclipse\Sumo
 ```
 
+Copy the SUMO network assets from the original thesis project into:
+
+```text
+data/sumo/base_network/test1.net.xml
+data/sumo/base_network/E2_info.xml
+```
+
+At runtime the project generates scenario route files and `.sumocfg` files under `data/sumo/generated_routes/`.
+
 ## PyCharm Configuration
 
 1. Open this folder as the PyCharm project: `CHD_CoPer_Traffic`.

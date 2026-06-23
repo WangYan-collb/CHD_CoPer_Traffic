@@ -8,6 +8,9 @@ environment:
   action_dim: 3
   simulation_time_s: 3600
   aggregation_time_s: 30
+  net_file: data/sumo/base_network/test1.net.xml
+  additional_file: data/sumo/base_network/E2_info.xml
+  use_gui: false
 algorithm:
   name: trans_beta_ppo
   lr: 0.0001

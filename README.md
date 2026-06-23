@@ -61,6 +61,8 @@ For full SUMO training, remove `--smoke`.
 
 ## Smoke Runs
 
+For a step-by-step guide that explains what to train, test, compare, and where outputs are saved, see [docs/RUNBOOK.md](docs/RUNBOOK.md).
+
 Smoke mode validates the Python/algorithm/logging path without launching SUMO:
 
 ```bash

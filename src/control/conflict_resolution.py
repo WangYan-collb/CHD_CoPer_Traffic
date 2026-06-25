@@ -21,8 +21,17 @@ def has_spacing_conflict(vehicles: list[ControlledVehicle], min_gap_m: float) ->
 def filter_spacing_conflicts(
     vehicles: list[ControlledVehicle], min_gap_m: float
 ) -> list[ControlledVehicle]:
+    """Keep vehicles separated in the same lane.
+
+    Vehicles in different lanes may be intentionally staggered for a moving
+    bottleneck, so conflicts are evaluated lane by lane instead of globally.
+    """
+
     accepted: list[ControlledVehicle] = []
-    for vehicle in sorted(vehicles, key=lambda item: item.position_m):
-        if all(abs(vehicle.position_m - kept.position_m) >= min_gap_m for kept in accepted):
+    for vehicle in vehicles:
+        if all(
+            vehicle.lane_id != kept.lane_id or abs(vehicle.position_m - kept.position_m) >= min_gap_m
+            for kept in accepted
+        ):
             accepted.append(vehicle)
     return accepted

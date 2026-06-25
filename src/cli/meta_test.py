@@ -49,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
             control_cycle_s=int(env_cfg.get("control_cycle_s", env_cfg.get("aggregation_time_s", 120))),
             simulation_time_s=int(env_cfg.get("simulation_time_s", 3600)),
             congestion_prediction_enabled=bool(env_cfg.get("congestion_prediction_enabled", True)),
+            control_activation_score=float(env_cfg.get("control_activation_score", 0.45)),
             net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
             additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
             use_gui=bool(env_cfg.get("use_gui", False)),

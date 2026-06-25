@@ -391,6 +391,31 @@ src/envs/sumo/congestion_prediction.py
 
 每个仿真秒都会根据密度、平均速度、排队长度、流量衰减和排队增长计算拥堵分数。只有预测为拥堵时，当前控制周期才执行移动瓶颈可变限速；如果移动瓶颈链式构建失败，则自动改为控制当前控制区域内所有 `CAV.*` 车辆。
 
+移动瓶颈主动构建采用分级策略：
+
+```text
+1. 每个 120 秒控制周期内，动作保持不变。
+2. 每 1 个仿真秒重新读取主线 CAV 位置，避免车辆驶出控制区后仍使用旧选择。
+3. CAV 位置使用主线绝对里程坐标，不直接使用 SUMO edge 内局部 lanePosition。
+4. 优先按车道构建 staggered moving bottleneck 主链。
+5. 主链附近补选支撑 CAV，提高限速控制覆盖率。
+6. 主链构建不足时，降级控制当前控制区内 CAV。
+7. 控制区内没有 CAV 时，选择控制区上下游 500 m 内最近 CAV 作为兜底。
+```
+
+日志中会记录：
+
+```text
+construction_mode
+chain_coverage
+active_control_seconds
+control_coverage_ratio
+selected_cav_count
+fallback_used
+```
+
+其中 `control_coverage_ratio` 越接近 1，表示该控制周期内越多仿真秒成功找到了可控 CAV 并施加限速。
+
 ## 11. 结果整理建议
 
 每次实验结束后，把不同模型的 `metrics.csv` 和 `actions.csv` 汇总到表格里。

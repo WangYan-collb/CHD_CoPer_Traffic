@@ -14,6 +14,9 @@ class MovingBottleneckCommand:
     start_position_m: float
     end_position_m: float
     selected_vehicles: list[ControlledVehicle]
+    target_vehicle_count: int = 0
+    chain_coverage: float = 0.0
+    construction_mode: str = "none"
     fallback_used: bool = False
 
 
@@ -29,6 +32,9 @@ class MovingBottleneckController:
         control_position_bounds: tuple[float, float] = (300.0, 7200.0),
         min_control_length_m: float = 200.0,
         search_tolerance_m: float = 35.0,
+        expansion_m: float = 300.0,
+        support_vehicles_per_lane: int = 2,
+        min_chain_coverage: float = 0.6,
     ) -> MovingBottleneckCommand:
         if len(actions) < 3:
             raise ValueError("moving bottleneck action must contain speed, start position, and gap")
@@ -49,28 +55,75 @@ class MovingBottleneckController:
         end_position = min(end_position, high)
         gap = self.gap_mapper.map_action(gap_action, speed_mps=speed_mps)
         selected: list[ControlledVehicle] = []
-        for lane_index, (lane_id, candidates) in enumerate(candidates_by_lane.items()):
+        primary_selected: list[ControlledVehicle] = []
+        sorted_lanes = sorted(candidates_by_lane.items())
+        target_vehicle_count = len([lane_id for lane_id, candidates in sorted_lanes if candidates])
+        for lane_index, (lane_id, candidates) in enumerate(sorted_lanes):
             if not candidates:
                 continue
-            candidates = [
+            in_area = [
                 candidate for candidate in candidates if start_position <= candidate.position_m <= end_position
             ]
-            if not candidates:
-                continue
+            expanded = [
+                candidate
+                for candidate in candidates
+                if start_position - expansion_m <= candidate.position_m <= end_position + expansion_m
+            ]
             target_position = start_position + lane_index * gap
             local_candidates = [
                 candidate
-                for candidate in candidates
+                for candidate in in_area
                 if abs(candidate.position_m - target_position) <= search_tolerance_m
             ]
-            search_pool = local_candidates or candidates
+            search_pool = local_candidates or in_area or expanded or candidates
             closest = min(search_pool, key=lambda item: abs(item.position_m - target_position))
+            primary_selected.append(closest)
             selected.append(closest)
-        selected = filter_spacing_conflicts(selected, min_gap_m=max(12.0, gap * 0.5))
+
+            support_pool = [
+                candidate
+                for candidate in in_area
+                if candidate.vehicle_id != closest.vehicle_id
+            ]
+            support_pool = sorted(
+                support_pool,
+                key=lambda item: (abs(item.position_m - target_position), item.position_m),
+            )
+            selected.extend(support_pool[:support_vehicles_per_lane])
+
+        selected = _unique_vehicles(selected)
+        selected = filter_spacing_conflicts(selected, min_gap_m=max(12.0, gap * 0.45))
+        primary_count = len(_unique_vehicles(primary_selected))
+        chain_coverage = primary_count / target_vehicle_count if target_vehicle_count else 0.0
+        if not selected:
+            mode = "none"
+        elif chain_coverage >= min_chain_coverage and len(selected) > primary_count:
+            mode = "chain_with_support"
+        elif chain_coverage >= min_chain_coverage:
+            mode = "chain"
+        elif selected:
+            mode = "area_fallback"
+        else:
+            mode = "none"
         return MovingBottleneckCommand(
             speed_limit_kmh=speed_limit_kmh,
             longitudinal_gap_m=gap,
             start_position_m=round(start_position, 3),
             end_position_m=round(end_position, 3),
             selected_vehicles=selected,
+            target_vehicle_count=target_vehicle_count,
+            chain_coverage=round(chain_coverage, 4),
+            construction_mode=mode,
+            fallback_used=chain_coverage < min_chain_coverage,
         )
+
+
+def _unique_vehicles(vehicles: list[ControlledVehicle]) -> list[ControlledVehicle]:
+    seen: set[str] = set()
+    unique: list[ControlledVehicle] = []
+    for vehicle in vehicles:
+        if vehicle.vehicle_id in seen:
+            continue
+        seen.add(vehicle.vehicle_id)
+        unique.append(vehicle)
+    return unique

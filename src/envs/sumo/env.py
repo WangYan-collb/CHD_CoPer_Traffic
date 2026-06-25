@@ -33,6 +33,7 @@ class SumoMovingBottleneckEnv:
         control_cycle_s: int | None = None,
         simulation_time_s: int = 3600,
         congestion_prediction_enabled: bool = True,
+        control_activation_score: float = 0.45,
         net_file: str | Path = "data/sumo/base_network/test1.net.xml",
         additional_file: str | Path = "data/sumo/base_network/E2_info.xml",
         use_gui: bool = False,
@@ -44,6 +45,7 @@ class SumoMovingBottleneckEnv:
         self.control_cycle_s = int(control_cycle_s or aggregation_time_s)
         self.simulation_time_s = int(simulation_time_s)
         self.congestion_prediction_enabled = congestion_prediction_enabled
+        self.control_activation_score = float(control_activation_score)
         self.net_file = self._scenario_asset_path(Path(net_file), ".net.xml", "test1.net.xml")
         self.additional_file = self._scenario_asset_path(Path(additional_file), ".add.xml", "E2_info.xml")
         self.use_gui = use_gui
@@ -128,34 +130,53 @@ class SumoMovingBottleneckEnv:
         traci = self.traci
         speed_mps = max(1.0, self._network_mean_speed())
         action4 = _action4(action)
-        candidates = self._cav_candidates()
         command = self.controller.build_command(
             list(action4),
             speed_mps=speed_mps,
-            candidates_by_lane=candidates,
+            candidates_by_lane=self._cav_candidates(),
         )
-        speed_limit_mps = command.speed_limit_kmh / 3.6
         metric_samples = []
         prediction = self.congestion_predictor.predict([])
         controlled_vehicle_ids: set[str] = set()
         fallback_used = False
+        active_control_seconds = 0
+        command_mode_counts: dict[str, int] = {}
         for _ in range(self.control_cycle_s):
             if traci.simulation.getMinExpectedNumber() <= 0:
                 break
             current_metrics = sample_network_metrics(traci)
             metric_samples.append(current_metrics)
             prediction = self.congestion_predictor.predict(metric_samples)
-            apply_control = prediction.is_congested if self.congestion_prediction_enabled else True
+            apply_control = (
+                prediction.is_congested or prediction.score >= self.control_activation_score
+                if self.congestion_prediction_enabled
+                else True
+            )
             if apply_control:
+                speed_mps = max(1.0, self._network_mean_speed())
+                candidates = self._cav_candidates()
+                command = self.controller.build_command(
+                    list(action4),
+                    speed_mps=speed_mps,
+                    candidates_by_lane=candidates,
+                )
+                speed_limit_mps = command.speed_limit_kmh / 3.6
                 selected = command.selected_vehicles
-                if len(selected) < max(1, len(candidates)):
+                if not selected:
                     selected = self._cavs_in_control_area(command.start_position_m, command.end_position_m)
+                    fallback_used = True
+                if not selected:
+                    selected = self._nearest_cavs_to_control_area(command.start_position_m, command.end_position_m)
                     fallback_used = True
                 for vehicle in selected:
                     if vehicle.vehicle_id in traci.vehicle.getIDList():
                         traci.vehicle.setSpeed(vehicle.vehicle_id, speed_limit_mps)
                         traci.vehicle.setLaneChangeMode(vehicle.vehicle_id, 255)
                         controlled_vehicle_ids.add(vehicle.vehicle_id)
+                if selected:
+                    active_control_seconds += 1
+                fallback_used = fallback_used or command.fallback_used
+                command_mode_counts[command.construction_mode] = command_mode_counts.get(command.construction_mode, 0) + 1
             else:
                 self._release_cav_speed_controls()
             traci.simulationStep()
@@ -194,6 +215,12 @@ class SumoMovingBottleneckEnv:
             "control_end_m": command.end_position_m,
             "selected_cav_count": len(controlled_vehicle_ids),
             "fallback_used": fallback_used,
+            "construction_mode": command.construction_mode,
+            "chain_coverage": command.chain_coverage,
+            "target_vehicle_count": command.target_vehicle_count,
+            "active_control_seconds": active_control_seconds,
+            "control_coverage_ratio": round(active_control_seconds / max(self.control_cycle_s, 1), 4),
+            "command_mode_counts": command_mode_counts,
             "is_congested": prediction.is_congested,
             "congestion_score": prediction.score,
             "density_score": prediction.density_score,
@@ -217,17 +244,20 @@ class SumoMovingBottleneckEnv:
     def _cav_candidates(self) -> dict[str, list[ControlledVehicle]]:
         candidates: dict[str, list[ControlledVehicle]] = {}
         for lane_id in self.traci.lane.getIDList():
-            if lane_id.startswith(":"):
+            if lane_id.startswith(":") or not self._is_mainline_lane(lane_id):
                 continue
             lane_candidates = []
             for vehicle_id in self.traci.lane.getLastStepVehicleIDs(lane_id):
                 if not vehicle_id.startswith("CAV."):
                     continue
+                position = self._vehicle_absolute_position(vehicle_id)
+                if position is None:
+                    continue
                 lane_candidates.append(
                     ControlledVehicle(
                         vehicle_id=vehicle_id,
                         lane_id=lane_id,
-                        position_m=float(self.traci.vehicle.getLanePosition(vehicle_id)),
+                        position_m=position,
                     )
                 )
             if lane_candidates:
@@ -237,15 +267,55 @@ class SumoMovingBottleneckEnv:
     def _cavs_in_control_area(self, start_position_m: float, end_position_m: float) -> list[ControlledVehicle]:
         selected = []
         for lane_id in self.traci.lane.getIDList():
-            if lane_id.startswith(":"):
+            if lane_id.startswith(":") or not self._is_mainline_lane(lane_id):
                 continue
             for vehicle_id in self.traci.lane.getLastStepVehicleIDs(lane_id):
                 if not vehicle_id.startswith("CAV."):
                     continue
-                position = float(self.traci.vehicle.getLanePosition(vehicle_id))
+                position = self._vehicle_absolute_position(vehicle_id)
+                if position is None:
+                    continue
                 if start_position_m <= position <= end_position_m:
                     selected.append(ControlledVehicle(vehicle_id, lane_id, position))
         return selected
+
+    def _nearest_cavs_to_control_area(
+        self,
+        start_position_m: float,
+        end_position_m: float,
+        max_distance_m: float = 500.0,
+    ) -> list[ControlledVehicle]:
+        center = 0.5 * (start_position_m + end_position_m)
+        candidates = [
+            vehicle
+            for lane_candidates in self._cav_candidates().values()
+            for vehicle in lane_candidates
+        ]
+        lane_count = len({vehicle.lane_id for vehicle in candidates})
+        nearby = [
+            vehicle
+            for vehicle in candidates
+            if start_position_m - max_distance_m <= vehicle.position_m <= end_position_m + max_distance_m
+        ]
+        return sorted(nearby, key=lambda vehicle: abs(vehicle.position_m - center))[: max(1, lane_count)]
+
+    def _is_mainline_lane(self, lane_id: str) -> bool:
+        edge_id = lane_id.split("_", 1)[0]
+        return edge_id in {"E1", "E4", "E6"}
+
+    def _vehicle_absolute_position(self, vehicle_id: str) -> float | None:
+        road_id = self.traci.vehicle.getRoadID(vehicle_id)
+        if road_id.startswith(":"):
+            return None
+        lane_position = float(self.traci.vehicle.getLanePosition(vehicle_id))
+        edge_offsets = {
+            "E1": 0.0,
+            "E4": 7500.0,
+            "E6": 7500.0 + float(self.scenario.bottleneck_length_m),
+        }
+        if road_id not in edge_offsets:
+            return None
+        return edge_offsets[road_id] + lane_position
 
     def _release_cav_speed_controls(self) -> None:
         for vehicle_id in self.traci.vehicle.getIDList():

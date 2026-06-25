@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         control_cycle_s=int(env_cfg.get("control_cycle_s", env_cfg.get("aggregation_time_s", 120))),
         simulation_time_s=int(env_cfg.get("simulation_time_s", 3600)),
         congestion_prediction_enabled=bool(env_cfg.get("congestion_prediction_enabled", True)),
+        control_activation_score=float(env_cfg.get("control_activation_score", 0.45)),
         net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
         additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
         use_gui=bool(env_cfg.get("use_gui", False)),
@@ -84,6 +85,10 @@ def main(argv: list[str] | None = None) -> int:
                 "longitudinal_gap_m": step_info.get("longitudinal_gap_m"),
                 "selected_cav_count": step_info.get("selected_cav_count"),
                 "fallback_used": step_info.get("fallback_used"),
+                "construction_mode": step_info.get("construction_mode"),
+                "chain_coverage": step_info.get("chain_coverage"),
+                "control_coverage_ratio": step_info.get("control_coverage_ratio"),
+                "active_control_seconds": step_info.get("active_control_seconds"),
                 "is_congested": step_info.get("is_congested"),
                 "congestion_score": step_info.get("congestion_score"),
             })
@@ -104,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
             "queue_m": step_info.get("queue_m"),
             "congestion_score": step_info.get("congestion_score"),
             "fallback_used": step_info.get("fallback_used"),
+            "chain_coverage": step_info.get("chain_coverage"),
+            "control_coverage_ratio": step_info.get("control_coverage_ratio"),
         })
     checkpoint = logger.checkpoint_dir / f"{algorithm_name}.pth"
     agent.save(checkpoint)

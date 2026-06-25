@@ -9,6 +9,7 @@ environment:
   simulation_time_s: 3600
   control_cycle_s: 120
   aggregation_time_s: 120
+  control_activation_score: 0.45
   net_file: data/sumo/base_network/test1.net.xml
   additional_file: data/sumo/base_network/E2_info.xml
   use_gui: false

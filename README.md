@@ -5,6 +5,8 @@ This project reproduces the thesis workflow for moving-bottleneck variable speed
 - `Trans-Beta-PPO`: Transformer temporal encoder plus Beta-distribution bounded continuous PPO.
 - `MAML-Trans-Beta-PPO`: first-order MAML orchestration for multi-scenario meta reinforcement learning.
 - `Reptile-Trans-Beta-PPO`: lighter first-order meta-RL variant that is often more stable for SUMO-in-the-loop training.
+- `Context-Meta-Trans-Beta-PPO`: context-conditioned meta-RL variant for fast online task inference.
+- `SAC`: maximum-entropy off-policy continuous-control baseline.
 - SUMO-compatible environment interfaces for CAV moving bottleneck control.
 - Default control timing: one episode is `3600` SUMO seconds, one RL step/control cycle is `120` SUMO seconds.
 - Control action: `[speed_limit, control_start, control_end, longitudinal_gap]`.
@@ -61,8 +63,12 @@ run/train_meta_trans_beta_ppo.py
 run/evaluate_meta_trans_beta_ppo.py
 run/run_chapter4_comparison.py
 run/run_chapter5_baselines.py
+run/train_sac.py
+run/evaluate_sac.py
 run/train_reptile_trans_beta_ppo.py
 run/evaluate_reptile_trans_beta_ppo.py
+run/train_context_meta_trans_beta_ppo.py
+run/evaluate_context_meta_trans_beta_ppo.py
 ```
 
 Each file has editable constants such as `SMOKE`, `CONFIG_PATH`, `CHECKPOINT`, and `EPISODES` near the top.
@@ -102,6 +108,8 @@ run/evaluate_meta_trans_beta_ppo.py
 .venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\maml_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\maml_trans_beta_ppo.pth
 .venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\reptile_trans_beta_ppo.yaml
 .venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\reptile_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\reptile_trans_beta_ppo.pth
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\sac.yaml
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\context_meta_trans_beta_ppo.yaml
 ```
 
 ## Experiment Comparison Design
@@ -112,6 +120,7 @@ Chapter 4 RL comparison configs:
 - `configs/rl/beta_ppo.yaml`: Beta-distribution PPO without Transformer.
 - `configs/rl/trans_beta_ppo.yaml`: thesis Trans-Beta-PPO.
 - `configs/rl/td3.yaml`: TD3 continuous-control baseline.
+- `configs/rl/sac.yaml`: maximum-entropy off-policy continuous-control baseline.
 
 Full batch run:
 
@@ -131,6 +140,7 @@ Recommended Chapter 5 baselines:
 - `configs/rl/trans_beta_ppo.yaml`: strongest non-meta baseline from Chapter 4.
 - `configs/meta_rl/maml_trans_beta_ppo.yaml`: proposed first-order MAML-Trans-Beta-PPO.
 - `configs/meta_rl/reptile_trans_beta_ppo.yaml`: recommended lightweight Reptile-Trans-Beta-PPO meta-RL comparison.
+- `configs/meta_rl/context_meta_trans_beta_ppo.yaml`: context-conditioned meta-RL variant for online task inference.
 
 This comparison separates feedback/MPC control, generic DRL, PPO, robust PPO, Transformer/Beta-PPO, and the added meta-learning modules. Test all methods on extrapolation scenarios and compare reward, average speed, queue length, density, TET, TIT, performance decay rate, adaptation steps, and OOD robustness score.
 

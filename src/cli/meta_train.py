@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
             "task_count": result.task_count,
             "scenarios": "|".join(scenario.name for scenario in scenarios),
         })
-    checkpoint = logger.checkpoint_dir / f"{meta_algorithm}_trans_beta_ppo.pth"
+    checkpoint = logger.checkpoint_dir / f"{config['run_name']}.pth"
     agent.save(checkpoint)
     logger.write_summary({
         "meta_algorithm": meta_algorithm,

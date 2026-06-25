@@ -7,7 +7,7 @@
 本项目用于复现论文中基于智能网联车移动瓶颈控制的高速公路车流控制实验，核心内容包括：
 
 - 第四章：连续动作强化学习对比实验，重点模型是 `Trans-Beta-PPO`。
-- 第五章：在 `Trans-Beta-PPO` 基础上加入元学习，形成 `MAML-Trans-Beta-PPO`，并提供更轻量的 `Reptile-Trans-Beta-PPO` 作为元强化学习对比模型。
+- 第五章：在 `Trans-Beta-PPO` 基础上加入元学习，形成 `MAML-Trans-Beta-PPO`，并提供更轻量的 `Reptile-Trans-Beta-PPO` 和上下文条件化 `Context-Meta-Trans-Beta-PPO` 作为元强化学习对比模型。
 - 仿真环境：SUMO 路网、车辆类型、正态分布车流、CAV 主动构建移动瓶颈。
 
 当前默认仿真节奏：
@@ -117,10 +117,14 @@ run/generate_sumo_routes.py
 run/train_trans_beta_ppo.py
 run/evaluate_trans_beta_ppo.py
 run/run_chapter4_comparison.py
+run/train_sac.py
+run/evaluate_sac.py
 run/train_meta_trans_beta_ppo.py
 run/evaluate_meta_trans_beta_ppo.py
 run/train_reptile_trans_beta_ppo.py
 run/evaluate_reptile_trans_beta_ppo.py
+run/train_context_meta_trans_beta_ppo.py
+run/evaluate_context_meta_trans_beta_ppo.py
 run/run_chapter5_baselines.py
 ```
 
@@ -184,6 +188,7 @@ checkpoints/trans_beta_ppo.pth
 2. `beta_ppo`: Beta 连续 PPO，不加 Transformer。
 3. `trans_beta_ppo`: 本文第四章主模型。
 4. `td3`: 连续控制 off-policy 对比模型。
+5. `sac`: 最大熵 off-policy 连续控制模型，用于比较 PPO 系列和更样本高效的连续控制方法。
 
 单独训练某个模型：
 
@@ -191,6 +196,7 @@ checkpoints/trans_beta_ppo.pth
 .venv\Scripts\python.exe -m src.cli.train --config configs\rl\beta_ppo.yaml
 .venv\Scripts\python.exe -m src.cli.train --config configs\rl\continuous_ppo.yaml
 .venv\Scripts\python.exe -m src.cli.train --config configs\rl\td3.yaml
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\sac.yaml
 ```
 
 批量跑第四章对比：
@@ -277,6 +283,15 @@ checkpoints/maml_trans_beta_ppo.pth
 7. 在 extrapolation_1、extrapolation_2 上看少步适应能力和 OOD 泛化。
 ```
 
+如果想加入近几年常用的“上下文/隐变量任务推断”思想，运行：
+
+```bat
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\context_meta_trans_beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\context_meta_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\context_meta_trans_beta_ppo.pth
+```
+
+这个模型保留 Transformer + Beta-PPO 主体，同时从最近一个状态序列的均值和波动中编码 traffic context。它适合 VSL 的原因是新场景通常体现为需求强度、CAV 渗透率、瓶颈形态和拥堵传播状态的变化，context 分支可以在线推断这些差异，再配合少步 Reptile 适应。
+
 ## 9. 第五章对比实验
 
 推荐对比模型：
@@ -289,6 +304,7 @@ checkpoints/maml_trans_beta_ppo.pth
 6. `trans_beta_ppo`: 不加元学习的第四章最强模型。
 7. `maml_trans_beta_ppo`: 第五章主模型。
 8. `reptile_trans_beta_ppo`: 一阶 Reptile 元强化学习对比模型，适合 SUMO 高成本训练。
+9. `context_meta_trans_beta_ppo`: 上下文条件化元强化学习模型，用于验证在线任务识别是否提升少步适应。
 
 配置入口：
 
@@ -307,6 +323,7 @@ configs/meta_rl/comparison_suite.yaml
 ```bat
 .venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\maml_trans_beta_ppo.yaml
 .venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\reptile_trans_beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\context_meta_trans_beta_ppo.yaml
 ```
 
 最后在外推场景上测试：

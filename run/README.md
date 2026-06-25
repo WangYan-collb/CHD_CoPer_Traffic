@@ -11,11 +11,15 @@ Recommended first run order:
 5. `train_trans_beta_ppo.py`
 6. `evaluate_trans_beta_ppo.py`
 7. `run_chapter4_comparison.py`
-8. `train_meta_trans_beta_ppo.py`
-9. `evaluate_meta_trans_beta_ppo.py`
-10. `train_reptile_trans_beta_ppo.py`
-11. `evaluate_reptile_trans_beta_ppo.py`
-12. `run_chapter5_baselines.py`
+8. `train_sac.py`
+9. `evaluate_sac.py`
+10. `train_meta_trans_beta_ppo.py`
+11. `evaluate_meta_trans_beta_ppo.py`
+12. `train_reptile_trans_beta_ppo.py`
+13. `evaluate_reptile_trans_beta_ppo.py`
+14. `train_context_meta_trans_beta_ppo.py`
+15. `evaluate_context_meta_trans_beta_ppo.py`
+16. `run_chapter5_baselines.py`
 
 Each entry has editable constants at the top:
 

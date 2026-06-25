@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         while not done:
             action, info = agent.select_action(state)
             next_state, reward, terminated, truncated, step_info = env.step(action)
-            if algorithm_name == "td3":
+            if algorithm_name in {"td3", "sac"}:
                 agent.store_transition(state, action, reward, next_state, terminated or truncated)
             else:
                 agent.store_transition(state, action, info["log_prob"], reward, terminated or truncated, info["value"])

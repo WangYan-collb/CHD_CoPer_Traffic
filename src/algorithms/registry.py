@@ -11,6 +11,8 @@ def algorithm_names() -> list[str]:
         "dr_ppo",
         "feedback_vsl",
         "mpc_vsl",
+        "sac",
+        "context_trans_beta_ppo",
         "td3",
         "traditional_drl_vsl",
         "trans_beta_ppo",
@@ -23,6 +25,10 @@ def create_agent(name: str, *, state_dim: int, action_dim: int, sequence_length:
         from src.algorithms.trans_beta_ppo.agent import TransBetaPPOAgent
 
         return TransBetaPPOAgent(state_dim, action_dim, sequence_length, **config)
+    if name == "context_trans_beta_ppo":
+        from src.algorithms.trans_beta_ppo.context_agent import ContextTransBetaPPOAgent
+
+        return ContextTransBetaPPOAgent(state_dim, action_dim, sequence_length, **config)
     if name == "beta_ppo":
         from src.algorithms.beta_ppo.agent import BetaPPOAgent
 
@@ -59,4 +65,8 @@ def create_agent(name: str, *, state_dim: int, action_dim: int, sequence_length:
         from src.algorithms.td3.agent import TD3Agent
 
         return TD3Agent(state_dim, action_dim, sequence_length, **config)
+    if name == "sac":
+        from src.algorithms.sac.agent import SACAgent
+
+        return SACAgent(state_dim, action_dim, sequence_length, **config)
     raise KeyError(f"unknown algorithm '{name}', available: {', '.join(algorithm_names())}")

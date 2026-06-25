@@ -88,7 +88,7 @@ Training entries default to real SUMO mode. Use `SMOKE = True` only for debuggin
 
 ## Windows PyCharm Runs
 
-For a step-by-step guide that explains what to train, test, compare, and where outputs are saved, see [docs/RUNBOOK.md](docs/RUNBOOK.md). For the folder/module layout, see [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md).
+For a step-by-step guide that explains what to train, test, compare, and where outputs are saved, see [docs/RUNBOOK.md](docs/RUNBOOK.md). For a detailed Chinese guide covering modules, model design, experiment design, SUMO simulation, meta-RL, hyperparameters, and extension steps, see [docs/DETAILED_CHINESE_GUIDE.md](docs/DETAILED_CHINESE_GUIDE.md). For the folder/module layout, see [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md).
 
 Recommended PyCharm order:
 

@@ -1,4 +1,10 @@
-# Project Structure
+# Project Structure / 项目结构
+
+更详细的中文模块说明、模型设计、实验设计、SUMO 运行流程和扩展方法见：
+
+```text
+docs/DETAILED_CHINESE_GUIDE.md
+```
 
 This project is organized so each layer has one responsibility.
 
@@ -74,3 +80,19 @@ src/project/
 ```
 
 For daily use, start from the files in `run/`. The `src/cli/` modules are still available for terminal/module-mode execution, but PyCharm users do not need to remember command-line arguments.
+
+## 中文模块速览
+
+```text
+configs/        实验配置和超参数，不建议在代码里硬改参数
+data/sumo/      SUMO 路网、route、sumocfg 和检测器文件
+run/            PyCharm 右键运行入口
+src/algorithms/ 强化学习、元强化学习和规则控制算法
+src/models/     Transformer、Beta Actor-Critic、上下文编码网络
+src/envs/sumo/  SUMO TraCI 交互、状态采样、拥堵预判、step 循环
+src/control/    CAV 移动瓶颈构建、限速映射、纵向间隙映射
+src/scenarios/  场景注册、车流生成、车辆参数、路网生成
+src/rewards/    密度、速度、排队、安全、构型奖励
+src/cli/        命令行训练、测试、元训练、批量实验入口
+src/logging_utils/ 实验结果记录
+```

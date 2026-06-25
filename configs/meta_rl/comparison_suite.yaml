@@ -6,7 +6,9 @@ baseline_configs:
   - configs/rl/vanilla_ppo.yaml
   - configs/rl/dr_ppo.yaml
   - configs/rl/trans_beta_ppo.yaml
-meta_config: configs/meta_rl/maml_trans_beta_ppo.yaml
+meta_configs:
+  - configs/meta_rl/maml_trans_beta_ppo.yaml
+  - configs/meta_rl/reptile_trans_beta_ppo.yaml
 train_scenarios:
   - base
   - interpolation_1

@@ -7,7 +7,7 @@
 本项目用于复现论文中基于智能网联车移动瓶颈控制的高速公路车流控制实验，核心内容包括：
 
 - 第四章：连续动作强化学习对比实验，重点模型是 `Trans-Beta-PPO`。
-- 第五章：在 `Trans-Beta-PPO` 基础上加入元学习，形成 `MAML-Trans-Beta-PPO`。
+- 第五章：在 `Trans-Beta-PPO` 基础上加入元学习，形成 `MAML-Trans-Beta-PPO`，并提供更轻量的 `Reptile-Trans-Beta-PPO` 作为元强化学习对比模型。
 - 仿真环境：SUMO 路网、车辆类型、正态分布车流、CAV 主动构建移动瓶颈。
 
 当前默认仿真节奏：
@@ -119,6 +119,8 @@ run/evaluate_trans_beta_ppo.py
 run/run_chapter4_comparison.py
 run/train_meta_trans_beta_ppo.py
 run/evaluate_meta_trans_beta_ppo.py
+run/train_reptile_trans_beta_ppo.py
+run/evaluate_reptile_trans_beta_ppo.py
 run/run_chapter5_baselines.py
 ```
 
@@ -219,6 +221,15 @@ selected_cav_count
 configs/meta_rl/maml_trans_beta_ppo.yaml
 ```
 
+训练场景由 `src/scenarios/scenario_registry.py` 自动加载：
+
+```text
+meta-train: base, interpolation_1, interpolation_2, interpolation_3
+meta-test: extrapolation_1, extrapolation_2
+```
+
+也就是说，直接运行元训练入口时，会加载基准场景和三个插值场景。`meta_batch_size=4` 时每个 meta episode 都使用这 4 个任务；以后如果增加更多插值场景，代码会按随机种子从任务池里抽取一个 meta batch。
+
 训练：
 
 ```bat
@@ -247,6 +258,25 @@ checkpoints/maml_trans_beta_ppo.pth
 
 当前元学习实现是一阶 MAML/Reptile 风格：每个任务从同一个初始策略出发做少量内循环适应，然后把多个任务适应后的策略变化汇总到 meta policy。这样比二阶 MAML 更适合 SUMO，因为仿真成本低一些、实现更稳定。
 
+如果想跑更稳定的一阶元学习对比，推荐使用 `Reptile-Trans-Beta-PPO`：
+
+```bat
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\reptile_trans_beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\reptile_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\reptile_trans_beta_ppo.pth
+```
+
+它的训练流程是：
+
+```text
+1. 读取 meta-train 场景池。
+2. 每个 meta episode 选择一个 meta batch。
+3. 对每个场景，从同一 Trans-Beta-PPO 初始化开始。
+4. 在该场景内跑 inner_steps 次 SUMO episode，并执行 PPO 内循环更新。
+5. 收集所有场景适应后的策略参数。
+6. 将 meta 初始化朝这些适应后参数的平均方向移动。
+7. 在 extrapolation_1、extrapolation_2 上看少步适应能力和 OOD 泛化。
+```
+
 ## 9. 第五章对比实验
 
 推荐对比模型：
@@ -258,6 +288,7 @@ checkpoints/maml_trans_beta_ppo.pth
 5. `dr_ppo`: 鲁棒 PPO，对车流和 CAV 渗透率扰动。
 6. `trans_beta_ppo`: 不加元学习的第四章最强模型。
 7. `maml_trans_beta_ppo`: 第五章主模型。
+8. `reptile_trans_beta_ppo`: 一阶 Reptile 元强化学习对比模型，适合 SUMO 高成本训练。
 
 配置入口：
 
@@ -275,6 +306,7 @@ configs/meta_rl/comparison_suite.yaml
 
 ```bat
 .venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\maml_trans_beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\reptile_trans_beta_ppo.yaml
 ```
 
 最后在外推场景上测试：

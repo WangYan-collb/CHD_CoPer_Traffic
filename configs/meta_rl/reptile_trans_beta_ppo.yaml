@@ -1,4 +1,4 @@
-run_name: maml_trans_beta_ppo
+run_name: reptile_trans_beta_ppo
 smoke: false
 seed: 20260623
 environment:
@@ -22,8 +22,8 @@ algorithm:
   entropy_coef: 0.01
   update_epochs: 4
 meta:
-  algorithm: maml
-  meta_lr: 0.0005
+  algorithm: reptile
+  meta_lr: 0.05
   inner_steps: 3
   meta_batch_size: 4
   episodes: 500

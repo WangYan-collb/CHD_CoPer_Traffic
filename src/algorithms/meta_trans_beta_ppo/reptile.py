@@ -8,27 +8,26 @@ from src.scenarios.scenario_config import ScenarioConfig
 
 
 @dataclass(frozen=True)
-class MetaUpdateResult:
+class ReptileUpdateResult:
     task_count: int
     inner_steps: int
     mean_reward: float
     mean_improvement: float
 
 
-class MAMLTransBetaPPO:
-    """First-order MAML-style orchestration wrapper.
+class ReptileTransBetaPPO:
+    """First-order meta-RL wrapper for Trans-Beta-PPO.
 
-    The heavy PPO gradient work stays inside `TransBetaPPOAgent`; this class owns
-    task sampling and bookkeeping so SUMO workers can plug in rollout functions.
-    It intentionally uses a first-order outer update because full second-order
-    MAML is usually too costly for SUMO-in-the-loop VSL training.
+    Reptile is a practical fit for SUMO experiments because it avoids expensive
+    second-order gradients. Each task adapts a copied initialization with PPO,
+    then the meta initialization moves toward the average adapted policy.
     """
 
     def __init__(
         self,
         agent: TransBetaPPOAgent,
         inner_steps: int = 3,
-        meta_lr: float = 5e-4,
+        meta_lr: float = 0.05,
     ):
         self.agent = agent
         self.inner_steps = inner_steps
@@ -42,29 +41,29 @@ class MAMLTransBetaPPO:
             rewards.append(reward)
         return rewards
 
-    def meta_update(self, scenarios: list[ScenarioConfig], rollout_fn) -> MetaUpdateResult:
+    def meta_update(self, scenarios: list[ScenarioConfig], rollout_fn) -> ReptileUpdateResult:
         all_rewards: list[float] = []
         improvements: list[float] = []
         base_state = copy.deepcopy(self.agent.policy.state_dict())
         adapted_states = []
         for scenario in scenarios:
             self.agent.policy.load_state_dict(base_state)
-            all_rewards.extend(self.adapt_task(scenario, rollout_fn))
-            if len(all_rewards) >= self.inner_steps:
-                task_rewards = all_rewards[-self.inner_steps :]
+            task_rewards = self.adapt_task(scenario, rollout_fn)
+            all_rewards.extend(task_rewards)
+            if task_rewards:
                 improvements.append(task_rewards[-1] - task_rewards[0])
             adapted_states.append(copy.deepcopy(self.agent.policy.state_dict()))
-        self.agent.policy.load_state_dict(self._meta_interpolate(base_state, adapted_states))
+        self.agent.policy.load_state_dict(self._move_toward_adapted_mean(base_state, adapted_states))
         mean_reward = sum(all_rewards) / len(all_rewards) if all_rewards else 0.0
         mean_improvement = sum(improvements) / len(improvements) if improvements else 0.0
-        return MetaUpdateResult(
+        return ReptileUpdateResult(
             task_count=len(scenarios),
             inner_steps=self.inner_steps,
             mean_reward=mean_reward,
             mean_improvement=mean_improvement,
         )
 
-    def _meta_interpolate(self, base_state, adapted_states):
+    def _move_toward_adapted_mean(self, base_state, adapted_states):
         if not adapted_states:
             return base_state
         meta_state = {}

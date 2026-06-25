@@ -4,6 +4,7 @@ This project reproduces the thesis workflow for moving-bottleneck variable speed
 
 - `Trans-Beta-PPO`: Transformer temporal encoder plus Beta-distribution bounded continuous PPO.
 - `MAML-Trans-Beta-PPO`: first-order MAML orchestration for multi-scenario meta reinforcement learning.
+- `Reptile-Trans-Beta-PPO`: lighter first-order meta-RL variant that is often more stable for SUMO-in-the-loop training.
 - SUMO-compatible environment interfaces for CAV moving bottleneck control.
 - Default control timing: one episode is `3600` SUMO seconds, one RL step/control cycle is `120` SUMO seconds.
 - Control action: `[speed_limit, control_start, control_end, longitudinal_gap]`.
@@ -60,6 +61,8 @@ run/train_meta_trans_beta_ppo.py
 run/evaluate_meta_trans_beta_ppo.py
 run/run_chapter4_comparison.py
 run/run_chapter5_baselines.py
+run/train_reptile_trans_beta_ppo.py
+run/evaluate_reptile_trans_beta_ppo.py
 ```
 
 Each file has editable constants such as `SMOKE`, `CONFIG_PATH`, `CHECKPOINT`, and `EPISODES` near the top.
@@ -97,6 +100,8 @@ run/evaluate_meta_trans_beta_ppo.py
 .venv\Scripts\python.exe -m src.cli.test --config configs\rl\trans_beta_ppo.yaml --checkpoint experiments\rl\<run>\checkpoints\trans_beta_ppo.pth
 .venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\maml_trans_beta_ppo.yaml
 .venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\maml_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\maml_trans_beta_ppo.pth
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\reptile_trans_beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\reptile_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\reptile_trans_beta_ppo.pth
 ```
 
 ## Experiment Comparison Design
@@ -124,9 +129,10 @@ Recommended Chapter 5 baselines:
 - `configs/rl/vanilla_ppo.yaml`: standard continuous PPO.
 - `configs/rl/dr_ppo.yaml`: distribution-robust PPO baseline with traffic-demand and CAV-ratio perturbation settings.
 - `configs/rl/trans_beta_ppo.yaml`: strongest non-meta baseline from Chapter 4.
-- `configs/meta_rl/maml_trans_beta_ppo.yaml`: proposed MAML-Trans-Beta-PPO.
+- `configs/meta_rl/maml_trans_beta_ppo.yaml`: proposed first-order MAML-Trans-Beta-PPO.
+- `configs/meta_rl/reptile_trans_beta_ppo.yaml`: recommended lightweight Reptile-Trans-Beta-PPO meta-RL comparison.
 
-This comparison separates feedback/MPC control, generic DRL, PPO, robust PPO, Transformer/Beta-PPO, and the added MAML meta-learning module. Test all methods on extrapolation scenarios and compare reward, average speed, queue length, density, TET, TIT, performance decay rate, adaptation steps, and OOD robustness score.
+This comparison separates feedback/MPC control, generic DRL, PPO, robust PPO, Transformer/Beta-PPO, and the added meta-learning modules. Test all methods on extrapolation scenarios and compare reward, average speed, queue length, density, TET, TIT, performance decay rate, adaptation steps, and OOD robustness score.
 
 ## Realistic Longitudinal Search Gap
 

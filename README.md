@@ -8,9 +8,13 @@ This project reproduces the thesis workflow for moving-bottleneck variable speed
 
 ## Setup
 
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+Windows + PyCharm + NVIDIA GPU is the primary target environment. See [docs/WINDOWS_PYCHARM_GPU.md](docs/WINDOWS_PYCHARM_GPU.md).
+
+```bat
+py -3.9 -m venv .venv
+.venv\Scripts\python.exe -m pip install --upgrade pip
+.venv\Scripts\python.exe -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
+.venv\Scripts\python.exe -m pip install -r requirements-windows-gpu.txt
 ```
 
 Recommended versions for reproducing the thesis experiments:
@@ -21,32 +25,25 @@ Recommended versions for reproducing the thesis experiments:
 - pandas: `1.5.3`
 - matplotlib: `3.7.1`
 
-For real SUMO runs, install SUMO 1.25.0 and export `SUMO_HOME`:
-
-```bash
-export SUMO_HOME=/path/to/sumo
-```
-
-On Windows, set `SUMO_HOME` in system environment variables, for example:
+Install SUMO 1.25.0 and set `SUMO_HOME` in Windows system environment variables, for example:
 
 ```text
 SUMO_HOME=C:\Program Files (x86)\Eclipse\Sumo
 ```
 
-Copy the SUMO network assets from the original thesis project into:
+Generate thesis SUMO network, route and simulation files from PyCharm:
 
 ```text
-data/sumo/base_network/test1.net.xml
-data/sumo/base_network/E2_info.xml
+run/build_sumo_network.py
 ```
 
-At runtime the project generates scenario route files and `.sumocfg` files under `data/sumo/generated_routes/`.
+This creates `data/sumo/base_network/*.net.xml`, `data/sumo/routes/*.rou.xml`, and `data/sumo/configs/*.sumocfg`.
 
 ## PyCharm Configuration
 
 1. Open this folder as the PyCharm project: `CHD_CoPer_Traffic`.
-2. Create or select a Python 3.9.17 virtual environment.
-3. Install dependencies with `pip install -r requirements.txt`.
+2. Create or select a Python 3.9.17 virtual environment at `.venv`.
+3. Install GPU dependencies from `requirements-windows-gpu.txt`.
 4. Add the project root as a source root if PyCharm does not detect it automatically.
 5. Set environment variable `SUMO_HOME` in each run configuration.
 6. Prefer the Python files under `run/` for right-click execution in PyCharm:
@@ -69,32 +66,35 @@ Module mode is also supported:
 
 ```text
 Module name: src.cli.train
-Parameters: --config configs/rl/trans_beta_ppo.yaml --smoke
+Parameters: --config configs/rl/trans_beta_ppo.yaml
 Working directory: <project root>
 ```
 
-For full SUMO training, remove `--smoke`.
+Training entries default to real SUMO mode. Use `SMOKE = True` only for debugging without SUMO.
 
-## Smoke Runs
+## Windows PyCharm Runs
 
 For a step-by-step guide that explains what to train, test, compare, and where outputs are saved, see [docs/RUNBOOK.md](docs/RUNBOOK.md). For the folder/module layout, see [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md).
 
-Smoke mode validates the Python/algorithm/logging path without launching SUMO:
+Recommended PyCharm order:
 
-```bash
-.venv/bin/python -m src.cli.train --config configs/rl/trans_beta_ppo.yaml --smoke
-.venv/bin/python -m src.cli.test --config configs/rl/trans_beta_ppo.yaml --smoke
-.venv/bin/python -m src.cli.meta_train --config configs/meta_rl/maml_trans_beta_ppo.yaml --smoke
-.venv/bin/python -m src.cli.meta_test --config configs/meta_rl/maml_trans_beta_ppo.yaml --smoke
+```text
+run/check_python_environment.py
+run/build_sumo_network.py
+run/train_trans_beta_ppo.py
+run/evaluate_trans_beta_ppo.py
+run/run_chapter4_comparison.py
+run/train_meta_trans_beta_ppo.py
+run/evaluate_meta_trans_beta_ppo.py
 ```
 
 ## Full Reproduction Commands
 
-```bash
-.venv/bin/python -m src.cli.train --config configs/rl/trans_beta_ppo.yaml
-.venv/bin/python -m src.cli.test --config configs/rl/trans_beta_ppo.yaml --checkpoint experiments/rl/<run>/checkpoints/trans_beta_ppo.pth
-.venv/bin/python -m src.cli.meta_train --config configs/meta_rl/maml_trans_beta_ppo.yaml
-.venv/bin/python -m src.cli.meta_test --config configs/meta_rl/maml_trans_beta_ppo.yaml --checkpoint experiments/meta_rl/<run>/checkpoints/maml_trans_beta_ppo.pth
+```bat
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\trans_beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.test --config configs\rl\trans_beta_ppo.yaml --checkpoint experiments\rl\<run>\checkpoints\trans_beta_ppo.pth
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\maml_trans_beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\maml_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\maml_trans_beta_ppo.pth
 ```
 
 ## Experiment Comparison Design
@@ -106,16 +106,10 @@ Chapter 4 RL comparison configs:
 - `configs/rl/trans_beta_ppo.yaml`: thesis Trans-Beta-PPO.
 - `configs/rl/td3.yaml`: TD3 continuous-control baseline.
 
-Batch smoke run:
-
-```bash
-.venv/bin/python -m src.cli.run_suite --suite configs/rl/comparison_suite.yaml --smoke
-```
-
 Full batch run:
 
-```bash
-.venv/bin/python -m src.cli.run_suite --suite configs/rl/comparison_suite.yaml
+```bat
+.venv\Scripts\python.exe -m src.cli.run_suite --suite configs\rl\comparison_suite.yaml
 ```
 
 Chapter 5 Meta-RL comparison:

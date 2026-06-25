@@ -15,7 +15,7 @@ from src.cli.meta_train import main
 
 
 CONFIG_PATH = "configs/meta_rl/maml_trans_beta_ppo.yaml"
-SMOKE = True
+SMOKE = False
 EPISODES: int | None = None
 
 

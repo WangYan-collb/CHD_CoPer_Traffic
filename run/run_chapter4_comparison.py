@@ -15,7 +15,7 @@ from src.cli.run_suite import main
 
 
 SUITE_PATH = "configs/rl/comparison_suite.yaml"
-SMOKE = True
+SMOKE = False
 
 
 def build_args() -> list[str]:

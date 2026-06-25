@@ -15,7 +15,7 @@ from src.cli.train import main
 
 
 CONFIG_PATH = "configs/rl/trans_beta_ppo.yaml"
-SMOKE = True
+SMOKE = False
 EPISODES: int | None = None
 
 

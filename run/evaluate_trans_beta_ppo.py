@@ -16,7 +16,7 @@ from src.cli.test import main
 
 CONFIG_PATH = "configs/rl/trans_beta_ppo.yaml"
 CHECKPOINT: str | None = None
-SMOKE = True
+SMOKE = False
 
 
 def build_args() -> list[str]:

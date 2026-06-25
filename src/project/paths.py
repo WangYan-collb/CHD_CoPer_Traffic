@@ -10,6 +10,8 @@ DATA_DIR = PROJECT_ROOT / "data"
 SUMO_DIR = DATA_DIR / "sumo"
 BASE_NETWORK_DIR = SUMO_DIR / "base_network"
 GENERATED_ROUTES_DIR = SUMO_DIR / "generated_routes"
+SUMO_ROUTES_DIR = SUMO_DIR / "routes"
+SUMO_CONFIGS_DIR = SUMO_DIR / "configs"
 EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 
 
@@ -17,7 +19,8 @@ EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 class SumoAssetPaths:
     net_file: Path = BASE_NETWORK_DIR / "test1.net.xml"
     additional_file: Path = BASE_NETWORK_DIR / "E2_info.xml"
-    generated_routes_dir: Path = GENERATED_ROUTES_DIR
+    routes_dir: Path = SUMO_ROUTES_DIR
+    configs_dir: Path = SUMO_CONFIGS_DIR
 
     def missing_required_files(self) -> list[Path]:
         return [path for path in (self.net_file, self.additional_file) if not path.exists()]

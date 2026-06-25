@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -16,20 +17,20 @@ class SumoConfigPaths:
     end_s: int = 3600
 
 
-def build_sumocfg(paths: SumoConfigPaths) -> SumoConfigPaths:
-    if not paths.net_file.exists():
+def build_sumocfg(paths: SumoConfigPaths, validate_inputs: bool = True) -> SumoConfigPaths:
+    if validate_inputs and not paths.net_file.exists():
         raise FileNotFoundError(
             f"SUMO net file not found: {paths.net_file}. "
             "Place the thesis net.xml under data/sumo/base_network or update the config."
         )
-    if not paths.route_file.exists():
+    if validate_inputs and not paths.route_file.exists():
         raise FileNotFoundError(f"SUMO route file not found: {paths.route_file}")
 
     root = ET.Element("configuration")
     input_node = ET.SubElement(root, "input")
     ET.SubElement(input_node, "net-file", {"value": _rel(paths.output_file, paths.net_file)})
     ET.SubElement(input_node, "route-files", {"value": _rel(paths.output_file, paths.route_file)})
-    if paths.additional_file and not paths.additional_file.exists():
+    if validate_inputs and paths.additional_file and not paths.additional_file.exists():
         raise FileNotFoundError(
             f"SUMO additional file not found: {paths.additional_file}. "
             "Place E2_info.xml under data/sumo/base_network or set additional_file to null."
@@ -54,7 +55,4 @@ def build_sumocfg(paths: SumoConfigPaths) -> SumoConfigPaths:
 
 
 def _rel(base_file: Path, target: Path) -> str:
-    try:
-        return str(target.resolve().relative_to(base_file.parent.resolve()))
-    except ValueError:
-        return str(target.resolve())
+    return os.path.relpath(target.resolve(), base_file.parent.resolve())

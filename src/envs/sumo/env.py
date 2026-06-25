@@ -9,7 +9,7 @@ from src.envs.sumo.config_builder import SumoConfigPaths, build_sumocfg
 from src.envs.sumo.state_calculator import average_metrics, build_state_vector, sample_network_metrics, smoke_metrics
 from src.envs.sumo.observations import StateHistory
 from src.envs.sumo.traci_client import SumoUnavailableError, build_sumo_command, load_traci
-from src.project.paths import BASE_NETWORK_DIR, GENERATED_ROUTES_DIR
+from src.project.paths import BASE_NETWORK_DIR, SUMO_CONFIGS_DIR, SUMO_ROUTES_DIR
 from src.rewards.combined_reward import combined_reward
 from src.scenarios.scenario_config import ScenarioConfig
 from src.scenarios.route_generator import generate_route_file
@@ -53,11 +53,11 @@ class SumoMovingBottleneckEnv:
         self.step_count = 0
         self.route_file = generate_route_file(
             self.scenario,
-            GENERATED_ROUTES_DIR / f"{self.scenario.name}.rou.xml",
+            SUMO_ROUTES_DIR / f"{self.scenario.name}.rou.xml",
         )
         if not self.smoke:
             self.traci = load_traci()
-            self.sumocfg_file = GENERATED_ROUTES_DIR / f"{self.scenario.name}.sumocfg"
+            self.sumocfg_file = SUMO_CONFIGS_DIR / f"{self.scenario.name}.sumocfg"
             build_sumocfg(
                 SumoConfigPaths(
                     net_file=self.net_file,

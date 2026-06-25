@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<configuration>
+  <input>
+    <net-file value="../base_network/interpolation_1.net.xml" />
+    <route-files value="../routes/interpolation_1.rou.xml" />
+    <additional-files value="../base_network/interpolation_1.add.xml" />
+  </input>
+  <time>
+    <begin value="0" />
+    <end value="3600" />
+    <step-length value="1.0" />
+  </time>
+  <processing>
+    <ignore-route-errors value="true" />
+    <time-to-teleport value="-1" />
+  </processing>
+</configuration>

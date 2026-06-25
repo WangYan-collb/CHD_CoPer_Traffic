@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 from src.envs.sumo.config_builder import SumoConfigPaths, build_sumocfg
 from src.envs.sumo.traci_client import SumoUnavailableError, netconvert_binary
-from src.project.paths import BASE_NETWORK_DIR, GENERATED_ROUTES_DIR, PROJECT_ROOT
+from src.project.paths import BASE_NETWORK_DIR, PROJECT_ROOT, SUMO_CONFIGS_DIR, SUMO_ROUTES_DIR
 from src.scenarios.road_network import RoadNetworkDesign
 from src.scenarios.scenario_config import ScenarioConfig
 from src.scenarios.scenario_registry import get_scenario, list_scenarios
@@ -53,6 +53,17 @@ def build_sumo_network(
     scenario = get_scenario(scenario_name)
     node_file, edge_file, connection_file, detector_file = write_plain_network_files(scenario, output_dir)
     net_file = output_dir / f"{scenario.name}.net.xml"
+    route_file = generate_route_file(scenario, SUMO_ROUTES_DIR / f"{scenario.name}.rou.xml")
+    sumocfg_file = SUMO_CONFIGS_DIR / f"{scenario.name}.sumocfg"
+    build_sumocfg(
+        SumoConfigPaths(
+            net_file=net_file,
+            route_file=route_file,
+            additional_file=detector_file,
+            output_file=sumocfg_file,
+        ),
+        validate_inputs=False,
+    )
     command = [
         netconvert_binary(),
         "--node-files",
@@ -70,8 +81,6 @@ def build_sumo_network(
     ]
     subprocess.run(command, check=True, cwd=PROJECT_ROOT)
 
-    route_file = generate_route_file(scenario, GENERATED_ROUTES_DIR / f"{scenario.name}.rou.xml")
-    sumocfg_file = GENERATED_ROUTES_DIR / f"{scenario.name}.sumocfg"
     build_sumocfg(
         SumoConfigPaths(
             net_file=net_file,

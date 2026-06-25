@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 experiments/
 data/sumo/generated_routes/
+data/sumo/detectors/
 *.pth
 *.pt
 *.ckpt
@@ -12,3 +13,4 @@ data/sumo/generated_routes/
 *.xlsx
 *.xml
 !data/sumo/base_network/*.xml
+!data/sumo/routes/*.xml

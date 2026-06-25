@@ -8,6 +8,7 @@ environment:
   action_dim: 3
 algorithm:
   name: td3
+  device: cuda
   lr: 0.0001
   gamma: 0.99
   tau: 0.005

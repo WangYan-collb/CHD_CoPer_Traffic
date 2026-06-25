@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<configuration>
+  <input>
+    <net-file value="../base_network/base.net.xml" />
+    <route-files value="../routes/base.rou.xml" />
+    <additional-files value="../base_network/base.add.xml" />
+  </input>
+  <time>
+    <begin value="0" />
+    <end value="3600" />
+    <step-length value="1.0" />
+  </time>
+  <processing>
+    <ignore-route-errors value="true" />
+    <time-to-teleport value="-1" />
+  </processing>
+</configuration>

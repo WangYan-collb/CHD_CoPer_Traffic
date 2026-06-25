@@ -8,6 +8,7 @@ environment:
   action_dim: 3
 algorithm:
   name: vanilla_ppo
+  device: cuda
   lr: 0.0001
   gamma: 0.99
   gae_lambda: 0.95

@@ -29,7 +29,7 @@ REQUIRED_MODULES = [
 def main() -> None:
     print(f"Python executable: {sys.executable}")
     print(f"Python version: {platform.python_version()}")
-    print("Recommended Python version: 3.9.17")
+    print("Recommended Windows interpreter: Python 3.9.17 x64")
     missing = []
     for module_name in REQUIRED_MODULES:
         if importlib.util.find_spec(module_name) is None:
@@ -39,8 +39,18 @@ def main() -> None:
             print(f"[ok] {module_name}")
     if missing:
         print("Install dependencies with:")
-        print("  .venv/bin/python -m pip install -r requirements.txt")
+        print(r"  .venv\Scripts\python.exe -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121")
+        print(r"  .venv\Scripts\python.exe -m pip install -r requirements-windows-gpu.txt")
         return
+    import torch
+
+    print(f"torch version: {torch.__version__}")
+    print(f"torch cuda available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"cuda device count: {torch.cuda.device_count()}")
+        print(f"cuda device 0: {torch.cuda.get_device_name(0)}")
+    else:
+        print("CUDA is not available. Check NVIDIA driver and the CUDA PyTorch wheel.")
     print("Python dependency check passed.")
 
 

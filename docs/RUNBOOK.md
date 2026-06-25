@@ -1,6 +1,6 @@
 # CHD_CoPer_Traffic 运行手册
 
-这份文档面向第一次接手项目的同学，按“先确认环境、再跑 smoke、再跑正式训练、最后做对比分析”的顺序执行。
+这份文档面向第一次接手项目的同学，按“先确认 Windows/PyCharm/GPU 环境、生成 SUMO 路网和车流、再跑训练和对比分析”的顺序执行。
 
 ## 1. 项目目标
 
@@ -23,32 +23,25 @@ pandas: 1.5.3
 matplotlib: 3.7.1
 ```
 
-创建虚拟环境并安装依赖：
+Windows PyCharm + GPU 的详细安装说明见：
 
-```bash
-python3.9 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+```text
+docs/WINDOWS_PYCHARM_GPU.md
 ```
 
 如果在 PyCharm 里运行：
 
 1. Open Project 选择项目根目录 `CHD_CoPer_Traffic`。
-2. Interpreter 选择 `.venv/bin/python`。
+2. Interpreter 选择 `.venv\Scripts\python.exe`。
 3. Working directory 设置为项目根目录。
 4. 环境变量里设置 `SUMO_HOME`。
-5. 优先右键运行 `run/` 目录下的 Python 文件，不需要运行 `.sh`。
-6. 第一次运行保持文件顶部的 `SMOKE = True`，正式 SUMO 实验再改成 `False`。
+5. 优先右键运行 `run/` 目录下的 Python 文件；命令行入口使用 `scripts/*.bat`。
+6. 训练入口默认是真实 SUMO 模式，只有调试时才把 `SMOKE = True`。
 
 工程模块说明见：
 
 ```text
 docs/PROJECT_STRUCTURE.md
-```
-
-macOS/Linux 示例：
-
-```bash
-export SUMO_HOME=/path/to/sumo
 ```
 
 Windows 示例：
@@ -59,23 +52,23 @@ SUMO_HOME=C:\Program Files (x86)\Eclipse\Sumo
 
 ## 3. SUMO 文件放置
 
-正式 SUMO 实验必须放入原始路网和检测器文件：
+正式 SUMO 实验需要路网文件、车流文件和仿真配置文件。本项目通过 `run/build_sumo_network.py` 生成：
+
+```text
+data/sumo/base_network/*.net.xml
+data/sumo/base_network/*.add.xml
+data/sumo/routes/*.rou.xml
+data/sumo/configs/*.sumocfg
+```
+
+基础场景同时兼容旧配置文件名：
 
 ```text
 data/sumo/base_network/test1.net.xml
 data/sumo/base_network/E2_info.xml
 ```
 
-程序运行时会自动生成：
-
-```text
-data/sumo/generated_routes/<scenario>.rou.xml
-data/sumo/generated_routes/<scenario>.sumocfg
-```
-
-`generated_routes` 是运行产物，不需要提交到 GitHub。
-
-如果暂时拿不到远端 `new_mvsl_pro_CAVTest/configuration` 原始文件，可以先右键运行：
+第一次在 Windows 上运行：
 
 ```text
 run/build_sumo_network.py
@@ -99,9 +92,9 @@ data/sumo/base_network/extrapolation_2.net.xml
 推荐直接右键运行这些文件：
 
 ```text
-run/check_sumo_assets.py
 run/check_python_environment.py
 run/build_sumo_network.py
+run/check_sumo_assets.py
 run/generate_sumo_routes.py
 run/train_trans_beta_ppo.py
 run/evaluate_trans_beta_ppo.py
@@ -115,49 +108,19 @@ run/run_chapter5_baselines.py
 
 ```python
 CONFIG_PATH = "configs/rl/trans_beta_ppo.yaml"
-SMOKE = True
+SMOKE = False
 EPISODES = None
 CHECKPOINT = None
 ```
 
-新机器先保持 `SMOKE = True`。路网、SUMO、依赖都确认以后，再把 `SMOKE` 改成 `False` 跑正式实验。
+`SMOKE = False` 表示真实 SUMO 交互训练。只有在不想启动 SUMO、仅检查 Python 逻辑时才临时改成 `True`。
 
-## 5. 先跑 Smoke 检查
-
-Smoke 模式不启动 SUMO，只检查 Python、模型、动作、奖励、日志路径是否能跑通。新机器第一次运行必须先跑 smoke。
-
-训练主模型：
-
-```bash
-.venv/bin/python -m src.cli.train --config configs/rl/trans_beta_ppo.yaml --smoke
-```
-
-测试主模型：
-
-```bash
-.venv/bin/python -m src.cli.test --config configs/rl/trans_beta_ppo.yaml --smoke
-```
-
-训练元强化学习模型：
-
-```bash
-.venv/bin/python -m src.cli.meta_train --config configs/meta_rl/maml_trans_beta_ppo.yaml --smoke
-```
-
-测试元强化学习模型：
-
-```bash
-.venv/bin/python -m src.cli.meta_test --config configs/meta_rl/maml_trans_beta_ppo.yaml --smoke
-```
-
-如果 smoke 都不能跑，先不要开 SUMO，优先检查 Python 版本、依赖安装和 working directory。
-
-## 6. 第四章强化学习训练
+## 5. 第四章强化学习训练
 
 主模型是 `Trans-Beta-PPO`：
 
-```bash
-.venv/bin/python -m src.cli.train --config configs/rl/trans_beta_ppo.yaml
+```bat
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\trans_beta_ppo.yaml
 ```
 
 训练完成后终端会输出：
@@ -178,13 +141,11 @@ checkpoints/trans_beta_ppo.pth
 
 测试训练好的 checkpoint：
 
-```bash
-.venv/bin/python -m src.cli.test \
-  --config configs/rl/trans_beta_ppo.yaml \
-  --checkpoint experiments/rl/<run>/checkpoints/trans_beta_ppo.pth
+```bat
+.venv\Scripts\python.exe -m src.cli.test --config configs\rl\trans_beta_ppo.yaml --checkpoint experiments\rl\<run>\checkpoints\trans_beta_ppo.pth
 ```
 
-## 7. 第四章对比实验
+## 6. 第四章对比实验
 
 推荐对比顺序：
 
@@ -195,22 +156,16 @@ checkpoints/trans_beta_ppo.pth
 
 单独训练某个模型：
 
-```bash
-.venv/bin/python -m src.cli.train --config configs/rl/beta_ppo.yaml
-.venv/bin/python -m src.cli.train --config configs/rl/continuous_ppo.yaml
-.venv/bin/python -m src.cli.train --config configs/rl/td3.yaml
+```bat
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\beta_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\continuous_ppo.yaml
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\td3.yaml
 ```
 
 批量跑第四章对比：
 
-```bash
-.venv/bin/python -m src.cli.run_suite --suite configs/rl/comparison_suite.yaml
-```
-
-先快速检查批量流程：
-
-```bash
-.venv/bin/python -m src.cli.run_suite --suite configs/rl/comparison_suite.yaml --smoke
+```bat
+.venv\Scripts\python.exe -m src.cli.run_suite --suite configs\rl\comparison_suite.yaml
 ```
 
 对比分析建议看这些指标：
@@ -227,7 +182,7 @@ selected_cav_count
 
 其中 `actions.csv` 用于分析模型控制行为，`metrics.csv` 用于画训练收敛和交通效率指标。
 
-## 8. 第五章元强化学习训练
+## 7. 第五章元强化学习训练
 
 元强化学习主配置：
 
@@ -237,8 +192,8 @@ configs/meta_rl/maml_trans_beta_ppo.yaml
 
 训练：
 
-```bash
-.venv/bin/python -m src.cli.meta_train --config configs/meta_rl/maml_trans_beta_ppo.yaml
+```bat
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\maml_trans_beta_ppo.yaml
 ```
 
 训练完成后会生成：
@@ -257,10 +212,8 @@ checkpoints/maml_trans_beta_ppo.pth
 
 测试：
 
-```bash
-.venv/bin/python -m src.cli.meta_test \
-  --config configs/meta_rl/maml_trans_beta_ppo.yaml \
-  --checkpoint experiments/meta_rl/<run>/checkpoints/maml_trans_beta_ppo.pth
+```bat
+.venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\maml_trans_beta_ppo.yaml --checkpoint experiments\meta_rl\<run>\checkpoints\maml_trans_beta_ppo.pth
 ```
 
 当前元学习实现是一阶 MAML/Reptile 风格：每个任务从同一个初始策略出发做少量内循环适应，然后把多个任务适应后的策略变化汇总到 meta policy。这样比二阶 MAML 更适合 SUMO，因为仿真成本低一些、实现更稳定。
@@ -284,20 +237,20 @@ configs/meta_rl/comparison_suite.yaml
 
 先训练非元学习基线：
 
-```bash
-.venv/bin/python -m src.cli.run_suite --suite configs/meta_rl/comparison_suite.yaml
+```bat
+.venv\Scripts\python.exe -m src.cli.run_suite --suite configs\meta_rl\comparison_suite.yaml
 ```
 
 再训练元强化学习模型：
 
-```bash
-.venv/bin/python -m src.cli.meta_train --config configs/meta_rl/maml_trans_beta_ppo.yaml
+```bat
+.venv\Scripts\python.exe -m src.cli.meta_train --config configs\meta_rl\maml_trans_beta_ppo.yaml
 ```
 
 最后在外推场景上测试：
 
-```bash
-.venv/bin/python -m src.cli.meta_test --config configs/meta_rl/maml_trans_beta_ppo.yaml
+```bat
+.venv\Scripts\python.exe -m src.cli.meta_test --config configs\meta_rl\maml_trans_beta_ppo.yaml
 ```
 
 第五章建议重点比较：
@@ -376,8 +329,9 @@ gap = vehicle_length + standstill_gap + speed * time_headway
 
 说明没有安装 SUMO Python 包，重新执行：
 
-```bash
-.venv/bin/python -m pip install -r requirements.txt
+```bat
+.venv\Scripts\python.exe -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
+.venv\Scripts\python.exe -m pip install -r requirements-windows-gpu.txt
 ```
 
 `SUMO_HOME is not set`
@@ -402,18 +356,18 @@ data/sumo/base_network/E2_info.xml
 
 训练很慢
 
-先用 `--smoke` 验证代码，再减少配置里的 `episodes`，确认流程没问题后再跑完整实验。
+先减少配置里的 `episodes`，确认流程没问题后再跑完整实验。
 
 ## 13. 推荐执行顺序
 
 第一次接手项目时按下面顺序执行：
 
-```bash
-.venv/bin/python -m src.cli.train --config configs/rl/trans_beta_ppo.yaml --smoke
-.venv/bin/python -m src.cli.meta_train --config configs/meta_rl/maml_trans_beta_ppo.yaml --smoke
-.venv/bin/python -m src.cli.run_suite --suite configs/rl/comparison_suite.yaml --smoke
-.venv/bin/python -m src.cli.train --config configs/rl/trans_beta_ppo.yaml
-.venv/bin/python -m src.cli.run_suite --suite configs/rl/comparison_suite.yaml
-.venv/bin/python -m src.cli.meta_train --config configs/meta_rl/maml_trans_beta_ppo.yaml
-.venv/bin/python -m src.cli.meta_test --config configs/meta_rl/maml_trans_beta_ppo.yaml
+```text
+run/check_python_environment.py
+run/build_sumo_network.py
+run/check_sumo_assets.py
+run/train_trans_beta_ppo.py
+run/run_chapter4_comparison.py
+run/train_meta_trans_beta_ppo.py
+run/evaluate_meta_trans_beta_ppo.py
 ```

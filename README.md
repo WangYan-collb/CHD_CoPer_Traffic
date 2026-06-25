@@ -3,6 +3,7 @@
 This project reproduces the thesis workflow for moving-bottleneck variable speed limit control under mixed traffic flow:
 
 - `Trans-Beta-PPO`: Transformer temporal encoder plus Beta-distribution bounded continuous PPO.
+- `Topology-Aware-Trans-Beta-PPO`: Trans-Beta-PPO with moving-bottleneck configuration, CAV position/gap feedback, and reward shaping.
 - `MAML-Trans-Beta-PPO`: first-order MAML orchestration for multi-scenario meta reinforcement learning.
 - `Reptile-Trans-Beta-PPO`: lighter first-order meta-RL variant that is often more stable for SUMO-in-the-loop training.
 - `Context-Meta-Trans-Beta-PPO`: context-conditioned meta-RL variant for fast online task inference.
@@ -65,6 +66,8 @@ run/run_chapter4_comparison.py
 run/run_chapter5_baselines.py
 run/train_sac.py
 run/evaluate_sac.py
+run/train_topology_aware_trans_beta_ppo.py
+run/evaluate_topology_aware_trans_beta_ppo.py
 run/train_reptile_trans_beta_ppo.py
 run/evaluate_reptile_trans_beta_ppo.py
 run/train_context_meta_trans_beta_ppo.py
@@ -119,6 +122,7 @@ Chapter 4 RL comparison configs:
 - `configs/rl/continuous_ppo.yaml`: continuous Gaussian PPO baseline.
 - `configs/rl/beta_ppo.yaml`: Beta-distribution PPO without Transformer.
 - `configs/rl/trans_beta_ppo.yaml`: thesis Trans-Beta-PPO.
+- `configs/rl/topology_aware_trans_beta_ppo.yaml`: Trans-Beta-PPO plus moving-bottleneck topology state/reward.
 - `configs/rl/td3.yaml`: TD3 continuous-control baseline.
 - `configs/rl/sac.yaml`: maximum-entropy off-policy continuous-control baseline.
 

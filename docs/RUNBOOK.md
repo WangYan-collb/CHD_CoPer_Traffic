@@ -119,6 +119,8 @@ run/evaluate_trans_beta_ppo.py
 run/run_chapter4_comparison.py
 run/train_sac.py
 run/evaluate_sac.py
+run/train_topology_aware_trans_beta_ppo.py
+run/evaluate_topology_aware_trans_beta_ppo.py
 run/train_meta_trans_beta_ppo.py
 run/evaluate_meta_trans_beta_ppo.py
 run/train_reptile_trans_beta_ppo.py
@@ -189,6 +191,7 @@ checkpoints/trans_beta_ppo.pth
 3. `trans_beta_ppo`: 本文第四章主模型。
 4. `td3`: 连续控制 off-policy 对比模型。
 5. `sac`: 最大熵 off-policy 连续控制模型，用于比较 PPO 系列和更样本高效的连续控制方法。
+6. `topology_aware_trans_beta_ppo`: 在主模型基础上加入移动瓶颈构型状态和构型奖励，用于验证 CAV 构型信息是否提升控制推理。
 
 单独训练某个模型：
 
@@ -197,6 +200,7 @@ checkpoints/trans_beta_ppo.pth
 .venv\Scripts\python.exe -m src.cli.train --config configs\rl\continuous_ppo.yaml
 .venv\Scripts\python.exe -m src.cli.train --config configs\rl\td3.yaml
 .venv\Scripts\python.exe -m src.cli.train --config configs\rl\sac.yaml
+.venv\Scripts\python.exe -m src.cli.train --config configs\rl\topology_aware_trans_beta_ppo.yaml
 ```
 
 批量跑第四章对比：
@@ -415,6 +419,38 @@ fallback_used
 ```
 
 其中 `control_coverage_ratio` 越接近 1，表示该控制周期内越多仿真秒成功找到了可控 CAV 并施加限速。
+
+构型感知强化学习配置在：
+
+```text
+configs/rl/topology_aware_trans_beta_ppo.yaml
+```
+
+它相对 `trans_beta_ppo` 增加了两类信息：
+
+```text
+state: chain_coverage, control_coverage_ratio, fallback_used, active_control_seconds,
+       target_vehicle_count, speed_limit_delta_kmh,
+       controlled_position_mean_m, controlled_position_std_m,
+       actual_gap_mean_m, gap_error_m,
+       congestion_score_delta, queue_delta_m
+reward: topology_reward
+```
+
+这让 DRL 不只根据交通流状态和限速动作学习，也能根据“移动瓶颈是否真的构建成功、控制周期内是否持续控制到 CAV、是否频繁兜底”来调整策略。原 `trans_beta_ppo.yaml` 不打开这些项，方便做消融对比。
+
+其中 CAV 控制位置和间隙反馈的含义是：
+
+```text
+controlled_position_mean_m: 上一周期被控 CAV 的平均主线位置
+controlled_position_std_m: 被控 CAV 位置离散度，反映控制构型是否过散
+actual_gap_mean_m: 被控 CAV 实际平均间隙
+gap_error_m: 实际平均间隙与动作目标间隙的偏差
+congestion_score_delta: 周期末拥堵分数 - 周期初拥堵分数
+queue_delta_m: 周期末排队长度 - 周期初排队长度
+```
+
+这些量会进入下一个控制周期的状态，指导智能体判断“上个周期把 CAV 控制在这个位置、这个间隙后，拥堵有没有缓解”，从而调整下一周期的控制区、限速和间隙。
 
 ## 11. 结果整理建议
 

@@ -53,6 +53,9 @@ def main(argv: list[str] | None = None) -> int:
         simulation_time_s=int(env_cfg.get("simulation_time_s", 3600)),
         congestion_prediction_enabled=bool(env_cfg.get("congestion_prediction_enabled", True)),
         control_activation_score=float(env_cfg.get("control_activation_score", 0.45)),
+        topology_state_enabled=bool(env_cfg.get("topology_state_enabled", False)),
+        topology_reward_enabled=bool(env_cfg.get("topology_reward_enabled", False)),
+        topology_reward_weight=float(env_cfg.get("topology_reward_weight", 0.10)),
         net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
         additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
         use_gui=bool(env_cfg.get("use_gui", False)),
@@ -89,6 +92,14 @@ def main(argv: list[str] | None = None) -> int:
                 "chain_coverage": step_info.get("chain_coverage"),
                 "control_coverage_ratio": step_info.get("control_coverage_ratio"),
                 "active_control_seconds": step_info.get("active_control_seconds"),
+                "topology_reward": step_info.get("topology_reward"),
+                "speed_limit_delta_kmh": step_info.get("speed_limit_delta_kmh"),
+                "controlled_position_mean_m": step_info.get("controlled_position_mean_m"),
+                "controlled_position_std_m": step_info.get("controlled_position_std_m"),
+                "actual_gap_mean_m": step_info.get("actual_gap_mean_m"),
+                "gap_error_m": step_info.get("gap_error_m"),
+                "congestion_score_delta": step_info.get("congestion_score_delta"),
+                "queue_delta_m": step_info.get("queue_delta_m"),
                 "is_congested": step_info.get("is_congested"),
                 "congestion_score": step_info.get("congestion_score"),
             })
@@ -111,6 +122,10 @@ def main(argv: list[str] | None = None) -> int:
             "fallback_used": step_info.get("fallback_used"),
             "chain_coverage": step_info.get("chain_coverage"),
             "control_coverage_ratio": step_info.get("control_coverage_ratio"),
+            "topology_reward": step_info.get("topology_reward"),
+            "gap_error_m": step_info.get("gap_error_m"),
+            "congestion_score_delta": step_info.get("congestion_score_delta"),
+            "queue_delta_m": step_info.get("queue_delta_m"),
         })
     checkpoint = logger.checkpoint_dir / f"{algorithm_name}.pth"
     agent.save(checkpoint)

@@ -1,0 +1,34 @@
+run_name: topology_aware_trans_beta_ppo
+scenario: base
+smoke: false
+seed: 20260623
+environment:
+  sequence_length: 30
+  state_dim: 22
+  action_dim: 4
+  simulation_time_s: 3600
+  control_cycle_s: 120
+  aggregation_time_s: 120
+  control_activation_score: 0.45
+  topology_state_enabled: true
+  topology_reward_enabled: true
+  topology_reward_weight: 0.10
+  net_file: data/sumo/base_network/test1.net.xml
+  additional_file: data/sumo/base_network/E2_info.xml
+  use_gui: false
+algorithm:
+  name: topology_aware_trans_beta_ppo
+  device: cuda
+  lr: 0.0001
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_epsilon: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.01
+  update_epochs: 4
+  context_dim: 32
+training:
+  episodes: 500
+  update_every_steps: 10
+outputs:
+  root: experiments/rl

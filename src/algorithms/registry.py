@@ -13,6 +13,7 @@ def algorithm_names() -> list[str]:
         "mpc_vsl",
         "sac",
         "context_trans_beta_ppo",
+        "topology_aware_trans_beta_ppo",
         "td3",
         "traditional_drl_vsl",
         "trans_beta_ppo",
@@ -26,6 +27,10 @@ def create_agent(name: str, *, state_dim: int, action_dim: int, sequence_length:
 
         return TransBetaPPOAgent(state_dim, action_dim, sequence_length, **config)
     if name == "context_trans_beta_ppo":
+        from src.algorithms.trans_beta_ppo.context_agent import ContextTransBetaPPOAgent
+
+        return ContextTransBetaPPOAgent(state_dim, action_dim, sequence_length, **config)
+    if name == "topology_aware_trans_beta_ppo":
         from src.algorithms.trans_beta_ppo.context_agent import ContextTransBetaPPOAgent
 
         return ContextTransBetaPPOAgent(state_dim, action_dim, sequence_length, **config)

@@ -11,7 +11,7 @@ from src.envs.sumo.state_calculator import average_metrics, build_state_vector, 
 from src.envs.sumo.observations import StateHistory
 from src.envs.sumo.traci_client import SumoUnavailableError, build_sumo_command, load_traci
 from src.project.paths import BASE_NETWORK_DIR, SUMO_CONFIGS_DIR, SUMO_ROUTES_DIR
-from src.rewards.combined_reward import combined_reward
+from src.rewards.combined_reward import RewardWeights, combined_reward
 from src.scenarios.scenario_config import ScenarioConfig
 from src.scenarios.route_generator import generate_route_file
 
@@ -34,6 +34,9 @@ class SumoMovingBottleneckEnv:
         simulation_time_s: int = 3600,
         congestion_prediction_enabled: bool = True,
         control_activation_score: float = 0.45,
+        topology_state_enabled: bool = False,
+        topology_reward_enabled: bool = False,
+        topology_reward_weight: float = 0.10,
         net_file: str | Path = "data/sumo/base_network/test1.net.xml",
         additional_file: str | Path = "data/sumo/base_network/E2_info.xml",
         use_gui: bool = False,
@@ -46,6 +49,9 @@ class SumoMovingBottleneckEnv:
         self.simulation_time_s = int(simulation_time_s)
         self.congestion_prediction_enabled = congestion_prediction_enabled
         self.control_activation_score = float(control_activation_score)
+        self.topology_state_enabled = bool(topology_state_enabled)
+        self.topology_reward_enabled = bool(topology_reward_enabled)
+        self.topology_reward_weight = float(topology_reward_weight)
         self.net_file = self._scenario_asset_path(Path(net_file), ".net.xml", "test1.net.xml")
         self.additional_file = self._scenario_asset_path(Path(additional_file), ".add.xml", "E2_info.xml")
         self.use_gui = use_gui
@@ -141,6 +147,8 @@ class SumoMovingBottleneckEnv:
         fallback_used = False
         active_control_seconds = 0
         command_mode_counts: dict[str, int] = {}
+        controlled_position_samples: list[float] = []
+        actual_gap_samples: list[float] = []
         for _ in range(self.control_cycle_s):
             if traci.simulation.getMinExpectedNumber() <= 0:
                 break
@@ -175,6 +183,9 @@ class SumoMovingBottleneckEnv:
                         controlled_vehicle_ids.add(vehicle.vehicle_id)
                 if selected:
                     active_control_seconds += 1
+                    positions = [vehicle.position_m for vehicle in selected]
+                    controlled_position_samples.extend(positions)
+                    actual_gap_samples.extend(_position_gaps(positions))
                 fallback_used = fallback_used or command.fallback_used
                 command_mode_counts[command.construction_mode] = command_mode_counts.get(command.construction_mode, 0) + 1
             else:
@@ -183,7 +194,24 @@ class SumoMovingBottleneckEnv:
 
         metrics = average_metrics(metric_samples)
         action_delta = float(np.abs(action4 - self.last_action).mean())
+        speed_limit_delta_kmh = 0.0
+        if self.last_action.size >= 1:
+            speed_limit_delta_kmh = abs(command.speed_limit_kmh - self._last_speed_limit_kmh())
         self.last_action = action4
+        control_coverage_ratio = round(active_control_seconds / max(self.control_cycle_s, 1), 4)
+        controlled_position_mean_m = float(np.mean(controlled_position_samples)) if controlled_position_samples else 0.0
+        controlled_position_std_m = float(np.std(controlled_position_samples)) if controlled_position_samples else 0.0
+        actual_gap_mean_m = float(np.mean(actual_gap_samples)) if actual_gap_samples else 0.0
+        gap_error_m = (
+            abs(actual_gap_mean_m - command.longitudinal_gap_m)
+            if actual_gap_mean_m > 0.0
+            else 0.0
+        )
+        congestion_score_delta = _congestion_delta(metric_samples, self.congestion_predictor, prediction.score)
+        queue_delta_m = metric_samples[-1].queue_m - metric_samples[0].queue_m if len(metric_samples) >= 2 else 0.0
+        reward_weights = None
+        if self.topology_reward_enabled:
+            reward_weights = RewardWeights(topology=self.topology_reward_weight)
         reward, breakdown = combined_reward(
             density=metrics.density,
             critical_density=27.0,
@@ -194,6 +222,17 @@ class SumoMovingBottleneckEnv:
             tet_s=metrics.tet_s,
             tit_s=metrics.tit_s,
             action_delta=action_delta,
+            chain_coverage=command.chain_coverage,
+            control_coverage_ratio=control_coverage_ratio,
+            fallback_used=fallback_used,
+            selected_cav_count=len(controlled_vehicle_ids),
+            target_vehicle_count=command.target_vehicle_count,
+            speed_limit_delta_kmh=speed_limit_delta_kmh,
+            actual_gap_mean_m=actual_gap_mean_m,
+            target_gap_m=command.longitudinal_gap_m,
+            congestion_score_delta=congestion_score_delta,
+            queue_delta_m=queue_delta_m,
+            weights=reward_weights,
         )
         state = build_state_vector(
             metrics,
@@ -204,6 +243,18 @@ class SumoMovingBottleneckEnv:
             congestion_score=prediction.score,
             control_start_m=command.start_position_m,
             control_end_m=command.end_position_m,
+            chain_coverage=command.chain_coverage if self.topology_state_enabled else 0.0,
+            control_coverage_ratio=control_coverage_ratio if self.topology_state_enabled else 0.0,
+            fallback_used=fallback_used if self.topology_state_enabled else False,
+            active_control_seconds=active_control_seconds if self.topology_state_enabled else 0,
+            target_vehicle_count=command.target_vehicle_count if self.topology_state_enabled else 0,
+            speed_limit_delta_kmh=speed_limit_delta_kmh if self.topology_state_enabled else 0.0,
+            controlled_position_mean_m=controlled_position_mean_m if self.topology_state_enabled else 0.0,
+            controlled_position_std_m=controlled_position_std_m if self.topology_state_enabled else 0.0,
+            actual_gap_mean_m=actual_gap_mean_m if self.topology_state_enabled else 0.0,
+            gap_error_m=gap_error_m if self.topology_state_enabled else 0.0,
+            congestion_score_delta=congestion_score_delta if self.topology_state_enabled else 0.0,
+            queue_delta_m=queue_delta_m if self.topology_state_enabled else 0.0,
         )
         next_state = self.history.append(state)
         terminated = traci.simulation.getMinExpectedNumber() <= 0
@@ -219,8 +270,16 @@ class SumoMovingBottleneckEnv:
             "chain_coverage": command.chain_coverage,
             "target_vehicle_count": command.target_vehicle_count,
             "active_control_seconds": active_control_seconds,
-            "control_coverage_ratio": round(active_control_seconds / max(self.control_cycle_s, 1), 4),
+            "control_coverage_ratio": control_coverage_ratio,
             "command_mode_counts": command_mode_counts,
+            "topology_reward": breakdown.topology,
+            "speed_limit_delta_kmh": speed_limit_delta_kmh,
+            "controlled_position_mean_m": controlled_position_mean_m,
+            "controlled_position_std_m": controlled_position_std_m,
+            "actual_gap_mean_m": actual_gap_mean_m,
+            "gap_error_m": gap_error_m,
+            "congestion_score_delta": congestion_score_delta,
+            "queue_delta_m": queue_delta_m,
             "is_congested": prediction.is_congested,
             "congestion_score": prediction.score,
             "density_score": prediction.density_score,
@@ -240,6 +299,13 @@ class SumoMovingBottleneckEnv:
         for vehicle_id in self.traci.vehicle.getIDList():
             speeds.append(self.traci.vehicle.getSpeed(vehicle_id))
         return float(np.mean(speeds)) if speeds else 20.0
+
+    def _last_speed_limit_kmh(self) -> float:
+        if self.last_action.size == 0:
+            return 0.0
+        from src.control.speed_limit_mapper import map_speed_action
+
+        return float(map_speed_action(float(self.last_action[0])))
 
     def _cav_candidates(self) -> dict[str, list[ControlledVehicle]]:
         candidates: dict[str, list[ControlledVehicle]] = {}
@@ -330,3 +396,19 @@ def _action4(action: np.ndarray) -> np.ndarray:
     if arr.size == 3:
         return np.asarray([arr[0], arr[1], min(1.0, arr[1] + 0.25), arr[2]], dtype=np.float32)
     raise ValueError("action must contain at least 3 dimensions")
+
+
+def _position_gaps(positions: list[float]) -> list[float]:
+    ordered = sorted(set(float(position) for position in positions))
+    return [
+        right - left
+        for left, right in zip(ordered, ordered[1:])
+        if right > left
+    ]
+
+
+def _congestion_delta(metric_samples, predictor, final_score: float) -> float:
+    if not metric_samples:
+        return 0.0
+    initial_score = predictor.predict([metric_samples[0]]).score
+    return float(final_score - initial_score)

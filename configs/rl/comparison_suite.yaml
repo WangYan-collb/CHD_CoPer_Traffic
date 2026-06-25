@@ -3,6 +3,7 @@ configs:
   - configs/rl/continuous_ppo.yaml
   - configs/rl/beta_ppo.yaml
   - configs/rl/trans_beta_ppo.yaml
+  - configs/rl/topology_aware_trans_beta_ppo.yaml
   - configs/rl/td3.yaml
   - configs/rl/sac.yaml
 scenarios:

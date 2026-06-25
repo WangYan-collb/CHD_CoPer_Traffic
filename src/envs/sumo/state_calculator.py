@@ -70,6 +70,18 @@ def build_state_vector(
     congestion_score: float = 0.0,
     control_start_m: float = 0.0,
     control_end_m: float = 0.0,
+    chain_coverage: float = 0.0,
+    control_coverage_ratio: float = 0.0,
+    fallback_used: bool = False,
+    active_control_seconds: int = 0,
+    target_vehicle_count: int = 0,
+    speed_limit_delta_kmh: float = 0.0,
+    controlled_position_mean_m: float = 0.0,
+    controlled_position_std_m: float = 0.0,
+    actual_gap_mean_m: float = 0.0,
+    gap_error_m: float = 0.0,
+    congestion_score_delta: float = 0.0,
+    queue_delta_m: float = 0.0,
 ) -> np.ndarray:
     state = np.zeros(state_dim, dtype=np.float32)
     state[0] = min(metrics.density / 100.0, 1.0)
@@ -89,4 +101,28 @@ def build_state_vector(
         state[8] = min(control_start_m / 7500.0, 1.0)
     if state_dim > 9:
         state[9] = min(control_end_m / 7500.0, 1.0)
+    if state_dim > 10:
+        state[10] = min(max(chain_coverage, 0.0), 1.0)
+    if state_dim > 11:
+        state[11] = min(max(control_coverage_ratio, 0.0), 1.0)
+    if state_dim > 12:
+        state[12] = 1.0 if fallback_used else 0.0
+    if state_dim > 13:
+        state[13] = min(active_control_seconds / 120.0, 1.0)
+    if state_dim > 14:
+        state[14] = min(target_vehicle_count / 10.0, 1.0)
+    if state_dim > 15:
+        state[15] = min(abs(speed_limit_delta_kmh) / 60.0, 1.0)
+    if state_dim > 16:
+        state[16] = min(controlled_position_mean_m / 10000.0, 1.0)
+    if state_dim > 17:
+        state[17] = min(controlled_position_std_m / 1500.0, 1.0)
+    if state_dim > 18:
+        state[18] = min(actual_gap_mean_m / 120.0, 1.0)
+    if state_dim > 19:
+        state[19] = min(abs(gap_error_m) / 80.0, 1.0)
+    if state_dim > 20:
+        state[20] = min(max(0.5 + congestion_score_delta, 0.0), 1.0)
+    if state_dim > 21:
+        state[21] = min(max(0.5 + queue_delta_m / 200.0, 0.0), 1.0)
     return state

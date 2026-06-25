@@ -1,0 +1,22 @@
+run_name: feedback_vsl
+scenario: base
+smoke: false
+seed: 20260623
+environment:
+  sequence_length: 30
+  state_dim: 17
+  action_dim: 4
+  simulation_time_s: 3600
+  control_cycle_s: 120
+  aggregation_time_s: 120
+algorithm:
+  name: feedback_vsl
+  critical_density: 27.0
+  kp_density: 0.018
+  kp_queue: 0.006
+  base_speed_action: 0.78
+training:
+  episodes: 1
+  update_every_steps: 1
+outputs:
+  root: experiments/baselines

@@ -9,6 +9,8 @@ def algorithm_names() -> list[str]:
         "classic_vsl",
         "continuous_ppo",
         "dr_ppo",
+        "feedback_vsl",
+        "mpc_vsl",
         "td3",
         "traditional_drl_vsl",
         "trans_beta_ppo",
@@ -45,6 +47,14 @@ def create_agent(name: str, *, state_dim: int, action_dim: int, sequence_length:
         from src.algorithms.rule_based.classic_vsl import ClassicVSLAgent
 
         return ClassicVSLAgent(state_dim, action_dim, sequence_length, **config)
+    if name == "feedback_vsl":
+        from src.algorithms.rule_based.feedback_vsl import FeedbackVSLAgent
+
+        return FeedbackVSLAgent(state_dim, action_dim, sequence_length, **config)
+    if name == "mpc_vsl":
+        from src.algorithms.rule_based.mpc_vsl import MPCVSLAgent
+
+        return MPCVSLAgent(state_dim, action_dim, sequence_length, **config)
     if name == "td3":
         from src.algorithms.td3.agent import TD3Agent
 

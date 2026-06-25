@@ -118,14 +118,15 @@ Chapter 5 Meta-RL comparison:
 
 Recommended Chapter 5 baselines:
 
-- `configs/baselines/classic_vsl.yaml`: non-learning rule-based VSL lower bound.
+- `configs/baselines/feedback_vsl.yaml`: density-feedback VSL controller.
+- `configs/baselines/mpc_vsl.yaml`: lightweight MPC-style VSL controller.
 - `configs/rl/traditional_drl_vsl.yaml`: plain MLP DRL-VSL baseline.
 - `configs/rl/vanilla_ppo.yaml`: standard continuous PPO.
 - `configs/rl/dr_ppo.yaml`: distribution-robust PPO baseline with traffic-demand and CAV-ratio perturbation settings.
 - `configs/rl/trans_beta_ppo.yaml`: strongest non-meta baseline from Chapter 4.
 - `configs/meta_rl/maml_trans_beta_ppo.yaml`: proposed MAML-Trans-Beta-PPO.
 
-This comparison is stronger than only comparing against weak DRL models: it separates rule control, generic DRL, PPO, robust PPO, Transformer/Beta-PPO, and the added MAML meta-learning module. Test all methods on extrapolation scenarios and compare reward, average speed, queue length, density, TET, TIT, performance decay rate, adaptation steps, and OOD robustness score.
+This comparison separates feedback/MPC control, generic DRL, PPO, robust PPO, Transformer/Beta-PPO, and the added MAML meta-learning module. Test all methods on extrapolation scenarios and compare reward, average speed, queue length, density, TET, TIT, performance decay rate, adaptation steps, and OOD robustness score.
 
 ## Realistic Longitudinal Search Gap
 

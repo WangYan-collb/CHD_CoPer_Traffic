@@ -23,7 +23,7 @@ src/algorithms/
   td3/                        TD3 baseline
   dr_ppo/                     Robust PPO baseline wrapper
   meta_trans_beta_ppo/        First-order MAML/Reptile-style meta update
-  rule_based/                 Classic VSL rule baseline
+  rule_based/                 Feedback VSL, MPC-VSL and legacy rule baselines
 
 src/models/
   transformer_encoder.py      Temporal sequence encoder

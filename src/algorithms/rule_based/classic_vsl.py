@@ -36,7 +36,7 @@ class ClassicVSLAgent:
         else:
             speed_action = 0.75
         action = np.array([speed_action, 0.35, 0.75, 0.5], dtype=np.float32)
-        if self.action_dim != 3:
+        if self.action_dim != 4:
             action = np.resize(action, self.action_dim).astype(np.float32)
         return np.clip(action, 0.0, 1.0), {"log_prob": 0.0, "value": 0.0}
 

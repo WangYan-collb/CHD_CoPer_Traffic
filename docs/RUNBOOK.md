@@ -251,12 +251,13 @@ checkpoints/maml_trans_beta_ppo.pth
 
 推荐对比模型：
 
-1. `classic_vsl`: 规则控制基线。
-2. `traditional_drl_vsl`: 传统 MLP DRL-VSL。
-3. `vanilla_ppo`: 标准 PPO。
-4. `dr_ppo`: 鲁棒 PPO，对车流和 CAV 渗透率扰动。
-5. `trans_beta_ppo`: 不加元学习的第四章最强模型。
-6. `maml_trans_beta_ppo`: 第五章主模型。
+1. `feedback_vsl`: 基于密度/排队反馈的传统 VSL 控制。
+2. `mpc_vsl`: 简化 MPC 式 VSL 控制。
+3. `traditional_drl_vsl`: 传统 MLP DRL-VSL。
+4. `vanilla_ppo`: 标准 PPO。
+5. `dr_ppo`: 鲁棒 PPO，对车流和 CAV 渗透率扰动。
+6. `trans_beta_ppo`: 不加元学习的第四章最强模型。
+7. `maml_trans_beta_ppo`: 第五章主模型。
 
 配置入口：
 

@@ -1,6 +1,7 @@
 suite_name: chapter5_meta_rl_comparison
 baseline_configs:
-  - configs/baselines/classic_vsl.yaml
+  - configs/baselines/feedback_vsl.yaml
+  - configs/baselines/mpc_vsl.yaml
   - configs/rl/traditional_drl_vsl.yaml
   - configs/rl/vanilla_ppo.yaml
   - configs/rl/dr_ppo.yaml

@@ -1,0 +1,24 @@
+run_name: mpc_vsl
+scenario: base
+smoke: false
+seed: 20260623
+environment:
+  sequence_length: 30
+  state_dim: 17
+  action_dim: 4
+  simulation_time_s: 3600
+  control_cycle_s: 120
+  aggregation_time_s: 120
+algorithm:
+  name: mpc_vsl
+  critical_density: 27.0
+  horizon_steps: 4
+  density_relaxation: 0.12
+  queue_weight: 0.35
+  speed_weight: 0.25
+  smoothness_weight: 0.10
+training:
+  episodes: 1
+  update_every_steps: 1
+outputs:
+  root: experiments/baselines

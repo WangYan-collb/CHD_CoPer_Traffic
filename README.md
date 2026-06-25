@@ -5,6 +5,8 @@ This project reproduces the thesis workflow for moving-bottleneck variable speed
 - `Trans-Beta-PPO`: Transformer temporal encoder plus Beta-distribution bounded continuous PPO.
 - `MAML-Trans-Beta-PPO`: first-order MAML orchestration for multi-scenario meta reinforcement learning.
 - SUMO-compatible environment interfaces for CAV moving bottleneck control.
+- Default control timing: one episode is `3600` SUMO seconds, one RL step/control cycle is `120` SUMO seconds.
+- Control action: `[speed_limit, control_start, control_end, longitudinal_gap]`.
 
 ## Setup
 

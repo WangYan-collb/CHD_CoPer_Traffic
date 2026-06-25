@@ -5,7 +5,10 @@ seed: 20260623
 environment:
   sequence_length: 30
   state_dim: 17
-  action_dim: 3
+  action_dim: 4
+  simulation_time_s: 3600
+  control_cycle_s: 120
+  aggregation_time_s: 120
 algorithm:
   name: beta_ppo
   device: cuda

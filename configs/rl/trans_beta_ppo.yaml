@@ -5,9 +5,10 @@ seed: 20260623
 environment:
   sequence_length: 30
   state_dim: 17
-  action_dim: 3
+  action_dim: 4
   simulation_time_s: 3600
-  aggregation_time_s: 30
+  control_cycle_s: 120
+  aggregation_time_s: 120
   net_file: data/sumo/base_network/test1.net.xml
   additional_file: data/sumo/base_network/E2_info.xml
   use_gui: false

@@ -12,7 +12,9 @@ class MovingBottleneckCommand:
     speed_limit_kmh: float
     longitudinal_gap_m: float
     start_position_m: float
+    end_position_m: float
     selected_vehicles: list[ControlledVehicle]
+    fallback_used: bool = False
 
 
 class MovingBottleneckController:
@@ -24,17 +26,35 @@ class MovingBottleneckController:
         actions: list[float],
         speed_mps: float,
         candidates_by_lane: dict[str, list[ControlledVehicle]],
-        start_position_bounds: tuple[float, float] = (300.0, 1600.0),
+        control_position_bounds: tuple[float, float] = (300.0, 7200.0),
+        min_control_length_m: float = 200.0,
         search_tolerance_m: float = 35.0,
     ) -> MovingBottleneckCommand:
         if len(actions) < 3:
             raise ValueError("moving bottleneck action must contain speed, start position, and gap")
         speed_limit_kmh = map_speed_action(actions[0])
-        low, high = start_position_bounds
-        start_position = low + max(0.0, min(1.0, actions[1])) * (high - low)
-        gap = self.gap_mapper.map_action(actions[2], speed_mps=speed_mps)
+        low, high = control_position_bounds
+        start_action = max(0.0, min(1.0, actions[1]))
+        if len(actions) >= 4:
+            end_action = max(0.0, min(1.0, actions[2]))
+            gap_action = actions[3]
+        else:
+            end_action = min(1.0, start_action + 0.25)
+            gap_action = actions[2]
+        start_position = low + start_action * (high - low)
+        end_position = low + end_action * (high - low)
+        if end_position < start_position:
+            start_position, end_position = end_position, start_position
+        end_position = max(end_position, start_position + min_control_length_m)
+        end_position = min(end_position, high)
+        gap = self.gap_mapper.map_action(gap_action, speed_mps=speed_mps)
         selected: list[ControlledVehicle] = []
         for lane_index, (lane_id, candidates) in enumerate(candidates_by_lane.items()):
+            if not candidates:
+                continue
+            candidates = [
+                candidate for candidate in candidates if start_position <= candidate.position_m <= end_position
+            ]
             if not candidates:
                 continue
             target_position = start_position + lane_index * gap
@@ -51,5 +71,6 @@ class MovingBottleneckController:
             speed_limit_kmh=speed_limit_kmh,
             longitudinal_gap_m=gap,
             start_position_m=round(start_position, 3),
+            end_position_m=round(end_position, 3),
             selected_vehicles=selected,
         )

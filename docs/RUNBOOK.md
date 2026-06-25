@@ -10,6 +10,24 @@
 - 第五章：在 `Trans-Beta-PPO` 基础上加入元学习，形成 `MAML-Trans-Beta-PPO`。
 - 仿真环境：SUMO 路网、车辆类型、正态分布车流、CAV 主动构建移动瓶颈。
 
+当前默认仿真节奏：
+
+```text
+episode = 3600 仿真秒
+RL step / control cycle = 120 仿真秒
+每个 step 内每 1 仿真秒采集一次交通状态
+step 返回状态 = 120 秒逐秒样本的平均交通状态
+```
+
+动作空间为 4 维连续动作：
+
+```text
+a0: CAV 限速值映射
+a1: 控制区域起点
+a2: 控制区域终点
+a3: 纵向搜索间隙
+```
+
 ## 2. 环境准备
 
 推荐版本：
@@ -114,6 +132,17 @@ CHECKPOINT = None
 ```
 
 `SMOKE = False` 表示真实 SUMO 交互训练。只有在不想启动 SUMO、仅检查 Python 逻辑时才临时改成 `True`。
+
+控制周期在配置文件里修改：
+
+```yaml
+environment:
+  simulation_time_s: 3600
+  control_cycle_s: 120
+  aggregation_time_s: 120
+```
+
+其中 `control_cycle_s` 决定一个强化学习 step 持续多少仿真秒；`aggregation_time_s` 保持同值，用于表示该周期内状态聚合窗口。
 
 ## 5. 第四章强化学习训练
 
@@ -303,6 +332,14 @@ gap = vehicle_length + standstill_gap + speed * time_headway
 ```
 
 默认时距范围是 1.0-1.8 s，并限制在 12-80 m，避免高速状态下出现不真实的小间隙。
+
+拥堵预判逻辑在：
+
+```text
+src/envs/sumo/congestion_prediction.py
+```
+
+每个仿真秒都会根据密度、平均速度、排队长度、流量衰减和排队增长计算拥堵分数。只有预测为拥堵时，当前控制周期才执行移动瓶颈可变限速；如果移动瓶颈链式构建失败，则自动改为控制当前控制区域内所有 `CAV.*` 车辆。
 
 ## 11. 结果整理建议
 

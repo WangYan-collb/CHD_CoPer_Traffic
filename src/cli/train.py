@@ -48,7 +48,10 @@ def main(argv: list[str] | None = None) -> int:
         sequence_length=env_cfg["sequence_length"],
         state_dim=env_cfg["state_dim"],
         smoke=config["smoke"],
-        aggregation_time_s=int(env_cfg.get("aggregation_time_s", 30)),
+        aggregation_time_s=int(env_cfg.get("aggregation_time_s", env_cfg.get("control_cycle_s", 120))),
+        control_cycle_s=int(env_cfg.get("control_cycle_s", env_cfg.get("aggregation_time_s", 120))),
+        simulation_time_s=int(env_cfg.get("simulation_time_s", 3600)),
+        congestion_prediction_enabled=bool(env_cfg.get("congestion_prediction_enabled", True)),
         net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
         additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
         use_gui=bool(env_cfg.get("use_gui", False)),
@@ -74,9 +77,15 @@ def main(argv: list[str] | None = None) -> int:
                 "a0": action[0],
                 "a1": action[1],
                 "a2": action[2],
+                "a3": action[3] if len(action) > 3 else None,
                 "speed_limit_kmh": step_info.get("speed_limit_kmh"),
+                "control_start_m": step_info.get("control_start_m"),
+                "control_end_m": step_info.get("control_end_m"),
                 "longitudinal_gap_m": step_info.get("longitudinal_gap_m"),
                 "selected_cav_count": step_info.get("selected_cav_count"),
+                "fallback_used": step_info.get("fallback_used"),
+                "is_congested": step_info.get("is_congested"),
+                "congestion_score": step_info.get("congestion_score"),
             })
             state = next_state
             done = terminated or truncated
@@ -93,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
             "density": step_info.get("density"),
             "speed_mps": step_info.get("speed_mps"),
             "queue_m": step_info.get("queue_m"),
+            "congestion_score": step_info.get("congestion_score"),
+            "fallback_used": step_info.get("fallback_used"),
         })
     checkpoint = logger.checkpoint_dir / f"{algorithm_name}.pth"
     agent.save(checkpoint)

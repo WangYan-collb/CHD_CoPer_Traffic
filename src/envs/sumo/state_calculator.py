@@ -67,6 +67,9 @@ def build_state_vector(
     speed_limit_kmh: float = 0.0,
     longitudinal_gap_m: float = 0.0,
     selected_cav_count: int = 0,
+    congestion_score: float = 0.0,
+    control_start_m: float = 0.0,
+    control_end_m: float = 0.0,
 ) -> np.ndarray:
     state = np.zeros(state_dim, dtype=np.float32)
     state[0] = min(metrics.density / 100.0, 1.0)
@@ -80,4 +83,10 @@ def build_state_vector(
         state[5] = min(selected_cav_count / 10.0, 1.0)
     if state_dim > 6:
         state[6] = min(metrics.throughput / 1000.0, 1.0)
+    if state_dim > 7:
+        state[7] = min(max(congestion_score, 0.0), 1.0)
+    if state_dim > 8:
+        state[8] = min(control_start_m / 7500.0, 1.0)
+    if state_dim > 9:
+        state[9] = min(control_end_m / 7500.0, 1.0)
     return state

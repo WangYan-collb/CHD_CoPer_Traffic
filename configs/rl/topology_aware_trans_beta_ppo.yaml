@@ -10,6 +10,13 @@ environment:
   control_cycle_s: 120
   aggregation_time_s: 120
   control_activation_score: 0.45
+  bottleneck_position_m: 7500.0
+  upstream_control_length_m: 2500.0
+  recovery_length_m: 300.0
+  start_position_fraction: 0.40
+  end_position_fraction: 0.35
+  min_control_length_m: 1500.0
+  route_randomization_enabled: true
   topology_state_enabled: true
   topology_reward_enabled: true
   topology_reward_weight: 0.10

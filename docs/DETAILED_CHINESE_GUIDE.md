@@ -31,6 +31,28 @@ a2: 控制区域终点，映射为主线绝对里程
 a3: CAV 纵向搜索间隙，映射为真实高速时距间隙
 ```
 
+控制区起点和终点参考给定论文中的空间动作映射思想：智能体仍输出归一化连续动作，但起点和终点不在整条上游道路上任意取值，而是在瓶颈上游有效控制区内分段映射。默认设置为：
+
+```text
+瓶颈位置 P_b = 7500 m
+瓶颈上游控制长度 L_up = 2500 m
+瓶颈前速度适应/恢复长度 L_rec = 300 m
+有效控制长度 L_C = L_up - L_rec = 2200 m
+起点候选比例 kappa_s = 0.40
+终点候选比例 kappa_e = 0.35
+最小控制区长度 = 1500 m
+```
+
+因此：
+
+```text
+控制区起点主要从 [5000 m, 5700 m] 内选择
+控制区终点主要从 [6430 m, 7200 m] 内选择
+控制区不会直接延伸到 7500 m 瓶颈位置
+```
+
+其中起点上限会受最小控制长度约束自动限制，保证控制区不会因为动作组合变得过短。这个设置比窄控制区更适合高速公路提前控速：控制更靠上游，控制长度更长，同时仍保留瓶颈前 300 m 恢复区。
+
 ## 2. 推荐阅读顺序
 
 第一次接手项目建议按下面顺序阅读：
@@ -328,10 +350,14 @@ moving_bottleneck.py
 
 ```text
 1. 按动作确定限速、控制区起点、控制区终点、目标搜索间隙
-2. 每条主线车道选择接近目标位置的 CAV，构建 staggered moving bottleneck 主链
-3. 主链附近补选支撑 CAV，提高控制覆盖率
-4. 主链不足时降级为区域内 CAV 控制
-5. 区域内无 CAV 时选择上下游附近 CAV 兜底
+2. 控制区起点映射到瓶颈上游有效控制区的上游候选段
+3. 控制区终点映射到瓶颈上游有效控制区的下游候选段
+4. 保留瓶颈前恢复距离，避免控制区直接伸入瓶颈
+5. 每条主线车道选择接近目标位置的 CAV，构建 staggered moving bottleneck 主链
+6. 主链附近补选支撑 CAV，提高控制覆盖率
+7. 主链不足时降级为区域内 CAV 控制
+8. 区域内无 CAV 时选择上下游附近 CAV 兜底
+9. CAV 离开控制区或不再被选中时，解除限速和换道限制
 ```
 
 输出 `MovingBottleneckCommand`：
@@ -348,6 +374,20 @@ construction_mode
 fallback_used
 ```
 
+空间动作映射由 `SpatialControlMapping` 控制，默认参数写在各个 YAML 的 `environment` 中：
+
+```yaml
+bottleneck_position_m: 7500.0
+upstream_control_length_m: 2500.0
+recovery_length_m: 300.0
+start_position_fraction: 0.40
+end_position_fraction: 0.35
+min_control_length_m: 1500.0
+route_randomization_enabled: true
+```
+
+如果以后换路网，只需要根据新瓶颈位置和上游可控长度修改这些参数，不需要改 PPO 动作维度。
+
 ```text
 longitudinal_gap.py
 ```
@@ -358,19 +398,34 @@ longitudinal_gap.py
 gap = vehicle_length + standstill_gap + speed * time_headway
 ```
 
-默认时距范围：
+当前实现采用 CAV 车辆参数和 IDM/时距思想：
 
 ```text
-1.0 s - 1.8 s
+vehicle_length = 3.5 m
+standstill_gap = 1.4 m
+comfortable_accel = 3.0 m/s^2
+comfortable_decel = 5.5 m/s^2
+time_headway = 1.1 s - 2.0 s
 ```
 
-并把绝对间隙限制在：
+动作 `a3` 不直接等于米制间隙，而是在当前速度对应的安全间隙范围内插值。速度越高，搜索间隙越大；低速拥堵状态下间隙自然缩小。绝对间隙限制在：
 
 ```text
-12 m - 80 m
+12 m - 95 m
 ```
 
-这样既保留论文中 15-25 m 的低速控制区域，也避免高速下不真实的小间隙。
+这样既保留低速拥堵控制中 15-25 m 左右的可用间隙，也避免高速状态下出现不真实的小间隙。
+
+### 3.6.1 CAV 离开控制区后的恢复逻辑
+
+每个仿真秒都会重新搜索 CAV。上一秒被控制、但当前秒不再属于移动瓶颈构型的 CAV，会立即释放：
+
+```text
+traci.vehicle.setSpeed(vehicle_id, -1)
+traci.vehicle.setLaneChangeMode(vehicle_id, 1621)
+```
+
+也就是说，恢复速度不强行指定为固定值，而是交给 SUMO 的车辆跟驰模型、道路限速和下游拥堵状态决定。如果下游仍拥堵，CAV 会按车流状态自然降速；如果下游恢复畅通，CAV 会逐步恢复到正常自由流速度。这样比写死某个恢复速度更符合真实高速公路行为。
 
 ```text
 speed_limit_mapper.py
@@ -804,6 +859,13 @@ environment:
   control_cycle_s: 120
   aggregation_time_s: 120
   control_activation_score: 0.45
+  bottleneck_position_m: 7500.0
+  upstream_control_length_m: 2500.0
+  recovery_length_m: 300.0
+  start_position_fraction: 0.40
+  end_position_fraction: 0.35
+  min_control_length_m: 1500.0
+  route_randomization_enabled: true
 ```
 
 说明：
@@ -816,6 +878,13 @@ simulation_time_s: 一个 episode 的仿真秒数
 control_cycle_s: 一个 RL step 持续多少仿真秒
 aggregation_time_s: 状态聚合窗口，通常和 control_cycle_s 保持一致
 control_activation_score: 拥堵预警控制触发分数
+bottleneck_position_m: 瓶颈位置的主线绝对里程
+upstream_control_length_m: 瓶颈上游可用于 VSL 控制的长度
+recovery_length_m: 瓶颈前预留的速度适应/恢复距离
+start_position_fraction: 起点候选段占有效控制区的比例
+end_position_fraction: 终点候选段占有效控制区的比例
+min_control_length_m: 控制区最小长度
+route_randomization_enabled: 训练时是否按 episode 改变 route 随机种子
 ```
 
 ### 8.2 PPO 超参数
@@ -1148,6 +1217,120 @@ SUMO + DRL 本来就慢。调试时：
 ```
 
 正式实验再恢复。
+
+### 5.3 深度强化学习训练调用链
+
+以 `run/train_trans_beta_ppo.py` 为例，PyCharm 右键运行后的调用链是：
+
+```text
+run/train_trans_beta_ppo.py
+  设置 CONFIG_PATH、SMOKE、EPISODES
+  调用 src.cli.train.main()
+
+src/cli/train.py
+  load_config() 读取 YAML
+  get_scenario() 读取场景
+  create_agent() 创建模型
+  SumoMovingBottleneckEnv() 创建 SUMO 环境
+  for episode in episodes:
+      env.reset(route_seed_offset=episode)
+      while not done:
+          agent.select_action(state)
+          env.step(action)
+          agent.store_transition(...)
+      agent.update()
+  agent.save(checkpoint)
+```
+
+训练中最重要的文件：
+
+```text
+src/cli/train.py                         训练主循环
+src/algorithms/registry.py               根据 algorithm.name 创建 agent
+src/algorithms/trans_beta_ppo/agent.py    PPO 动作采样、buffer、参数更新
+src/models/beta_actor_critic.py           Transformer + Beta Actor-Critic 网络
+src/envs/sumo/env.py                      SUMO 交互、CAV 控制、reward 和 next_state
+src/rewards/combined_reward.py            总奖励
+src/control/moving_bottleneck.py          移动瓶颈控制命令
+src/scenarios/route_generator.py          每个 episode 生成 route
+```
+
+`env.step(action)` 内部不是只推进 1 秒，而是推进一个完整控制周期：
+
+```text
+一个 RL step = control_cycle_s 个 SUMO simulationStep
+默认 control_cycle_s = 120
+```
+
+在这 120 秒内，每秒都会：
+
+```text
+1. 采集 SUMO lane/vehicle 状态
+2. 更新拥堵预判分数
+3. 判断是否触发 CAV 限速控制
+4. 重新搜索当前主线 CAV
+5. 根据动作构建移动瓶颈控制区和 CAV 队列
+6. 对 CAV 执行 traci.vehicle.setSpeed
+7. 推进 SUMO simulationStep
+```
+
+控制周期结束后，环境会：
+
+```text
+1. 聚合 120 秒交通状态
+2. 计算 reward
+3. 生成下一周期 state
+4. 返回 info，用于写 actions.csv 和 metrics.csv
+```
+
+### 5.4 route 随机性和鲁棒训练
+
+训练配置中默认：
+
+```yaml
+route_randomization_enabled: true
+```
+
+含义是：同一个 scenario 的基础参数不变，但每个 episode 使用不同 seed offset 生成 route：
+
+```text
+episode 0: scenario.seed + 0
+episode 1: scenario.seed + 1
+episode 2: scenario.seed + 2
+```
+
+这样每个 episode 的主线/匝道正态采样流量、CAV 发车时刻会有轻微变化。好处是模型不会只记住一条固定车流轨迹，鲁棒性更好。
+
+测试入口默认不传 `route_seed_offset`，因此测试车流固定。这样不同模型测试时面对同一条 route，更适合公平对比。
+
+### 5.5 模型测试调用链
+
+以 `run/evaluate_trans_beta_ppo.py` 为例：
+
+```text
+run/evaluate_trans_beta_ppo.py
+  设置 CONFIG_PATH、CHECKPOINT、SMOKE
+  调用 src.cli.test.main()
+
+src/cli/test.py
+  load_config()
+  create_agent()
+  agent.load(checkpoint)
+  env.reset()
+  while not done:
+      agent.select_action(state)
+      env.step(action)
+  输出 mean_reward
+```
+
+测试和训练的区别：
+
+```text
+训练: 会 store_transition 并 update 参数
+测试: 只 select_action 和 env.step，不 update 参数
+训练: route_seed_offset 随 episode 变化
+测试: route_seed_offset 默认 0，保证可复现
+```
 
 ### 13.4 checkpoint 路径怎么填
 

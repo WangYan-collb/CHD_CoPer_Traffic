@@ -20,17 +20,58 @@ class MovingBottleneckCommand:
     fallback_used: bool = False
 
 
+@dataclass(frozen=True)
+class SpatialControlMapping:
+    """Map normalized start/end actions into a constrained upstream VSL region."""
+
+    bottleneck_position_m: float = 7500.0
+    upstream_control_length_m: float = 2500.0
+    recovery_length_m: float = 300.0
+    start_fraction: float = 0.40
+    end_fraction: float = 0.35
+    min_control_length_m: float = 1500.0
+
+    @property
+    def upstream_start_m(self) -> float:
+        return self.bottleneck_position_m - self.upstream_control_length_m
+
+    @property
+    def downstream_limit_m(self) -> float:
+        return self.bottleneck_position_m - self.recovery_length_m
+
+    @property
+    def effective_length_m(self) -> float:
+        return max(1.0, self.downstream_limit_m - self.upstream_start_m)
+
+    def map_actions(self, start_action: float, end_action: float) -> tuple[float, float]:
+        start_fraction = _clip01(self.start_fraction)
+        end_fraction = _clip01(self.end_fraction)
+        start = self.upstream_start_m + _clip01(start_action) * start_fraction * self.effective_length_m
+        max_start = self.downstream_limit_m - self.min_control_length_m
+        start = min(start, max_start)
+        raw_end_low = self.downstream_limit_m - end_fraction * self.effective_length_m
+        raw_end = raw_end_low + _clip01(end_action) * end_fraction * self.effective_length_m
+        end = max(raw_end, start + self.min_control_length_m)
+        end = min(end, self.downstream_limit_m)
+        if end <= start:
+            end = min(self.downstream_limit_m, start + max(1.0, self.min_control_length_m))
+        return round(start, 3), round(end, 3)
+
+
 class MovingBottleneckController:
-    def __init__(self, gap_mapper: LongitudinalGapMapper | None = None):
+    def __init__(
+        self,
+        gap_mapper: LongitudinalGapMapper | None = None,
+        spatial_mapping: SpatialControlMapping | None = None,
+    ):
         self.gap_mapper = gap_mapper or LongitudinalGapMapper()
+        self.spatial_mapping = spatial_mapping or SpatialControlMapping()
 
     def build_command(
         self,
         actions: list[float],
         speed_mps: float,
         candidates_by_lane: dict[str, list[ControlledVehicle]],
-        control_position_bounds: tuple[float, float] = (300.0, 7200.0),
-        min_control_length_m: float = 200.0,
         search_tolerance_m: float = 35.0,
         expansion_m: float = 300.0,
         support_vehicles_per_lane: int = 2,
@@ -39,7 +80,6 @@ class MovingBottleneckController:
         if len(actions) < 3:
             raise ValueError("moving bottleneck action must contain speed, start position, and gap")
         speed_limit_kmh = map_speed_action(actions[0])
-        low, high = control_position_bounds
         start_action = max(0.0, min(1.0, actions[1]))
         if len(actions) >= 4:
             end_action = max(0.0, min(1.0, actions[2]))
@@ -47,12 +87,7 @@ class MovingBottleneckController:
         else:
             end_action = min(1.0, start_action + 0.25)
             gap_action = actions[2]
-        start_position = low + start_action * (high - low)
-        end_position = low + end_action * (high - low)
-        if end_position < start_position:
-            start_position, end_position = end_position, start_position
-        end_position = max(end_position, start_position + min_control_length_m)
-        end_position = min(end_position, high)
+        start_position, end_position = self.spatial_mapping.map_actions(start_action, end_action)
         gap = self.gap_mapper.map_action(gap_action, speed_mps=speed_mps)
         selected: list[ControlledVehicle] = []
         primary_selected: list[ControlledVehicle] = []
@@ -127,3 +162,7 @@ def _unique_vehicles(vehicles: list[ControlledVehicle]) -> list[ControlledVehicl
         seen.add(vehicle.vehicle_id)
         unique.append(vehicle)
     return unique
+
+
+def _clip01(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))

@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 
 from src.control.conflict_resolution import ControlledVehicle
-from src.control.moving_bottleneck import MovingBottleneckController
+from src.control.moving_bottleneck import MovingBottleneckController, SpatialControlMapping
 from src.envs.sumo.congestion_prediction import CongestionPredictor
 from src.envs.sumo.config_builder import SumoConfigPaths, build_sumocfg
 from src.envs.sumo.state_calculator import average_metrics, build_state_vector, sample_network_metrics, smoke_metrics
@@ -37,6 +37,12 @@ class SumoMovingBottleneckEnv:
         topology_state_enabled: bool = False,
         topology_reward_enabled: bool = False,
         topology_reward_weight: float = 0.10,
+        bottleneck_position_m: float = 7500.0,
+        upstream_control_length_m: float = 1900.0,
+        recovery_length_m: float = 300.0,
+        start_position_fraction: float = 0.25,
+        end_position_fraction: float = 0.25,
+        min_control_length_m: float = 1200.0,
         net_file: str | Path = "data/sumo/base_network/test1.net.xml",
         additional_file: str | Path = "data/sumo/base_network/E2_info.xml",
         use_gui: bool = False,
@@ -60,15 +66,27 @@ class SumoMovingBottleneckEnv:
         self.traci = None
         self.route_file = None
         self.sumocfg_file = None
-        self.controller = MovingBottleneckController()
+        self.controller = MovingBottleneckController(
+            spatial_mapping=SpatialControlMapping(
+                bottleneck_position_m=float(bottleneck_position_m),
+                upstream_control_length_m=float(upstream_control_length_m),
+                recovery_length_m=float(recovery_length_m),
+                start_fraction=float(start_position_fraction),
+                end_fraction=float(end_position_fraction),
+                min_control_length_m=float(min_control_length_m),
+            )
+        )
         self.congestion_predictor = CongestionPredictor()
         self.last_action = np.zeros(4, dtype=np.float32)
+        self.currently_controlled_cavs: set[str] = set()
 
-    def reset(self) -> tuple[np.ndarray, dict[str, object]]:
+    def reset(self, route_seed_offset: int = 0) -> tuple[np.ndarray, dict[str, object]]:
         self.step_count = 0
+        self.currently_controlled_cavs.clear()
         self.route_file = generate_route_file(
             self.scenario,
             SUMO_ROUTES_DIR / f"{self.scenario.name}.rou.xml",
+            seed_offset=route_seed_offset,
         )
         if not self.smoke:
             self.traci = load_traci()
@@ -87,6 +105,7 @@ class SumoMovingBottleneckEnv:
             "scenario": self.scenario.name,
             "smoke": self.smoke,
             "route_file": str(self.route_file),
+            "route_seed_offset": route_seed_offset,
             "sumocfg_file": None if self.sumocfg_file is None else str(self.sumocfg_file),
         }
 
@@ -176,11 +195,14 @@ class SumoMovingBottleneckEnv:
                 if not selected:
                     selected = self._nearest_cavs_to_control_area(command.start_position_m, command.end_position_m)
                     fallback_used = True
+                selected_ids = {vehicle.vehicle_id for vehicle in selected}
+                self._release_cav_speed_controls(self.currently_controlled_cavs - selected_ids)
                 for vehicle in selected:
                     if vehicle.vehicle_id in traci.vehicle.getIDList():
                         traci.vehicle.setSpeed(vehicle.vehicle_id, speed_limit_mps)
-                        traci.vehicle.setLaneChangeMode(vehicle.vehicle_id, 255)
+                        traci.vehicle.setLaneChangeMode(vehicle.vehicle_id, 0)
                         controlled_vehicle_ids.add(vehicle.vehicle_id)
+                self.currently_controlled_cavs = selected_ids
                 if selected:
                     active_control_seconds += 1
                     positions = [vehicle.position_m for vehicle in selected]
@@ -383,10 +405,15 @@ class SumoMovingBottleneckEnv:
             return None
         return edge_offsets[road_id] + lane_position
 
-    def _release_cav_speed_controls(self) -> None:
-        for vehicle_id in self.traci.vehicle.getIDList():
-            if vehicle_id.startswith("CAV."):
+    def _release_cav_speed_controls(self, vehicle_ids: set[str] | None = None) -> None:
+        if vehicle_ids is None:
+            vehicle_ids = {vehicle_id for vehicle_id in self.traci.vehicle.getIDList() if vehicle_id.startswith("CAV.")}
+        for vehicle_id in vehicle_ids:
+            if vehicle_id in self.traci.vehicle.getIDList():
                 self.traci.vehicle.setSpeed(vehicle_id, -1)
+                self.traci.vehicle.setLaneChangeMode(vehicle_id, 1621)
+        if vehicle_ids:
+            self.currently_controlled_cavs.difference_update(vehicle_ids)
 
 
 def _action4(action: np.ndarray) -> np.ndarray:

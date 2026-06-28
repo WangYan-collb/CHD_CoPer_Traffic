@@ -56,14 +56,22 @@ def main(argv: list[str] | None = None) -> int:
         topology_state_enabled=bool(env_cfg.get("topology_state_enabled", False)),
         topology_reward_enabled=bool(env_cfg.get("topology_reward_enabled", False)),
         topology_reward_weight=float(env_cfg.get("topology_reward_weight", 0.10)),
+        bottleneck_position_m=float(env_cfg.get("bottleneck_position_m", 7500.0)),
+        upstream_control_length_m=float(env_cfg.get("upstream_control_length_m", 1900.0)),
+        recovery_length_m=float(env_cfg.get("recovery_length_m", 300.0)),
+        start_position_fraction=float(env_cfg.get("start_position_fraction", 0.25)),
+        end_position_fraction=float(env_cfg.get("end_position_fraction", 0.25)),
+        min_control_length_m=float(env_cfg.get("min_control_length_m", 1200.0)),
         net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
         additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
         use_gui=bool(env_cfg.get("use_gui", False)),
     )
 
     episode_count = int(config["training"]["episodes"])
+    route_randomization_enabled = bool(env_cfg.get("route_randomization_enabled", True))
     for episode in range(episode_count):
-        state, _ = env.reset()
+        route_seed_offset = episode if route_randomization_enabled else 0
+        state, _ = env.reset(route_seed_offset=route_seed_offset)
         done = False
         total_reward = 0.0
         step = 0

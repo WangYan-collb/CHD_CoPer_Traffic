@@ -154,9 +154,18 @@ environment:
   simulation_time_s: 3600
   control_cycle_s: 120
   aggregation_time_s: 120
+  bottleneck_position_m: 7500.0
+  upstream_control_length_m: 2500.0
+  recovery_length_m: 300.0
+  start_position_fraction: 0.40
+  end_position_fraction: 0.35
+  min_control_length_m: 1500.0
+  route_randomization_enabled: true
 ```
 
 其中 `control_cycle_s` 决定一个强化学习 step 持续多少仿真秒；`aggregation_time_s` 保持同值，用于表示该周期内状态聚合窗口。
+
+控制区起点和终点参考论文中的空间动作映射方式：不是在整条上游路段任意取点，而是在瓶颈上游有效控制区内分段映射。默认设置表示瓶颈位于 7500 m，向上游取 2500 m 作为可控区域，并在瓶颈前保留 300 m 速度适应/恢复区，因此有效控制长度为 2200 m。起点动作映射到更靠上游的候选段，终点动作映射到靠近瓶颈但不进入瓶颈的候选段，并保证控制区长度不少于 1500 m。训练时 `route_randomization_enabled=true`，每个 episode 会用不同 route seed 采样车流；测试入口不传 episode seed，默认固定车流，便于复现实验对比。
 
 ## 5. 第四章强化学习训练
 
@@ -393,6 +402,8 @@ gap = vehicle_length + standstill_gap + speed * time_headway
 
 默认时距范围是 1.0-1.8 s，并限制在 12-80 m，避免高速状态下出现不真实的小间隙。
 
+当前代码已把纵向搜索间隙改成基于 CAV 车辆参数和 IDM/时距思想的安全间隙模型。它使用 CAV 车长、最小停车间隙、舒适加减速和当前速度计算可行间隙范围，动作 `a3` 只是在这个范围内选择。默认时距范围为 1.1-2.0 s，绝对间隙限制为 12-95 m。CAV 离开控制区或不再被选中时，会执行 `setSpeed(-1)` 和恢复默认换道模式，让车辆根据 SUMO 跟驰模型、道路限速和下游拥堵状态自然恢复，不写死固定恢复速度。
+
 拥堵预判逻辑在：
 
 ```text
@@ -407,10 +418,13 @@ src/envs/sumo/congestion_prediction.py
 1. 每个 120 秒控制周期内，动作保持不变。
 2. 每 1 个仿真秒重新读取主线 CAV 位置，避免车辆驶出控制区后仍使用旧选择。
 3. CAV 位置使用主线绝对里程坐标，不直接使用 SUMO edge 内局部 lanePosition。
-4. 优先按车道构建 staggered moving bottleneck 主链。
-5. 主链附近补选支撑 CAV，提高限速控制覆盖率。
-6. 主链构建不足时，降级控制当前控制区内 CAV。
-7. 控制区内没有 CAV 时，选择控制区上下游 500 m 内最近 CAV 作为兜底。
+4. 控制区起点从瓶颈上游有效区间的上游候选段选择。
+5. 控制区终点从瓶颈上游有效区间的下游候选段选择。
+6. 控制区终点不会直接伸入瓶颈，默认保留 300 m 恢复区。
+7. 优先按车道构建 staggered moving bottleneck 主链。
+8. 主链附近补选支撑 CAV，提高限速控制覆盖率。
+9. 主链构建不足时，降级控制当前控制区内 CAV。
+10. 控制区内没有 CAV 时，选择控制区上下游 500 m 内最近 CAV 作为兜底。
 ```
 
 日志中会记录：
@@ -525,3 +539,25 @@ run/run_chapter4_comparison.py
 run/train_meta_trans_beta_ppo.py
 run/evaluate_meta_trans_beta_ppo.py
 ```
+
+## 14. PyCharm 中训练和测试到底调用什么
+
+以 `run/train_trans_beta_ppo.py` 为例，PyCharm 右键运行后会调用：
+
+```text
+run/train_trans_beta_ppo.py
+-> src.cli.train.main()
+-> load_config(configs/rl/trans_beta_ppo.yaml)
+-> create_agent("trans_beta_ppo")
+-> SumoMovingBottleneckEnv(...)
+-> env.reset(route_seed_offset=episode)
+-> agent.select_action(state)
+-> env.step(action)
+-> agent.store_transition(...)
+-> agent.update()
+-> agent.save(checkpoint)
+```
+
+其中 `env.reset()` 会生成或刷新当前 episode 的 route 文件，并启动 SUMO；`env.step()` 会推进一个控制周期，也就是 120 个仿真秒。测试入口 `run/evaluate_trans_beta_ppo.py` 调用 `src.cli.test.main()`，它会加载 checkpoint，只执行动作推理和 SUMO 交互，不做参数更新。
+
+训练时 route 随机性由 `route_randomization_enabled` 控制。打开后，第 `episode` 回合使用 `scenario.seed + episode` 生成 route，使同一场景下的车流需求和 CAV 发车时刻有轻微变化，提高模型鲁棒性。测试时保持固定 seed，保证不同模型在同一测试车流上比较。

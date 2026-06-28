@@ -33,8 +33,8 @@ class NormalTrafficFlowSampler:
         total = sum(hdv_mix)
         self.hdv_mix = tuple(item / total for item in hdv_mix)
 
-    def sample_segments(self, scenario: ScenarioConfig) -> list[FlowSegment]:
-        rng = random.Random(scenario.seed)
+    def sample_segments(self, scenario: ScenarioConfig, seed_offset: int = 0) -> list[FlowSegment]:
+        rng = random.Random(scenario.seed + int(seed_offset))
         segment_count = int(3600 * scenario.route_hours / self.segment_seconds)
         profile = self._profile(segment_count)
         segments: list[FlowSegment] = []

@@ -11,6 +11,7 @@ This project reproduces the thesis workflow for moving-bottleneck variable speed
 - SUMO-compatible environment interfaces for CAV moving bottleneck control.
 - Default control timing: one episode is `3600` SUMO seconds, one RL step/control cycle is `120` SUMO seconds.
 - Control action: `[speed_limit, control_start, control_end, longitudinal_gap]`.
+- Spatial control-zone actions follow an upstream/downstream constrained mapping: the default bottleneck is at `7500 m`, with `2500 m` upstream control length, `300 m` recovery length, `0.40/0.35` start/end candidate fractions, and `1500 m` minimum control length.
 
 ## Setup
 

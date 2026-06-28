@@ -15,10 +15,10 @@ def _add_vehicle_types(root: ET.Element) -> None:
         ET.SubElement(root, "vType", vehicle_type.sumo_attributes())
 
 
-def generate_route_file(scenario: ScenarioConfig, output_path: str | Path) -> Path:
+def generate_route_file(scenario: ScenarioConfig, output_path: str | Path, seed_offset: int = 0) -> Path:
     """Generate a simple SUMO route file from a thesis scenario config."""
 
-    rng = random.Random(scenario.seed)
+    rng = random.Random(scenario.seed + int(seed_offset))
     road = RoadNetworkDesign(bottleneck_length_m=scenario.bottleneck_length_m)
     sampler = NormalTrafficFlowSampler(segment_seconds=600)
     path = Path(output_path)
@@ -29,7 +29,7 @@ def generate_route_file(scenario: ScenarioConfig, output_path: str | Path) -> Pa
     ET.SubElement(root, "route", {"id": "ramp", "edges": road.ramp_route_edges})
 
     cav_index = 0
-    for segment_index, segment in enumerate(sampler.sample_segments(scenario)):
+    for segment_index, segment in enumerate(sampler.sample_segments(scenario, seed_offset=seed_offset)):
         split = sampler.split_vehicle_flows(segment, scenario.cav_ratio)
         for idx, vehicle_type in enumerate(("HDV_0", "HDV_1", "HDV_2")):
             ET.SubElement(

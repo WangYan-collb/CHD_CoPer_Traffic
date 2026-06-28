@@ -60,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
     result = None
     scenario_pool = meta_train_scenarios()
     batch_size = min(int(meta_cfg["meta_batch_size"]), len(scenario_pool))
+    route_randomization_enabled = bool(env_cfg.get("route_randomization_enabled", True))
+    route_seed_offsets: dict[str, int] = {}
 
     def rollout_episode(rollout_agent, scenario):
         env = SumoMovingBottleneckEnv(
@@ -75,11 +77,19 @@ def main(argv: list[str] | None = None) -> int:
             topology_state_enabled=bool(env_cfg.get("topology_state_enabled", False)),
             topology_reward_enabled=bool(env_cfg.get("topology_reward_enabled", False)),
             topology_reward_weight=float(env_cfg.get("topology_reward_weight", 0.10)),
+            bottleneck_position_m=float(env_cfg.get("bottleneck_position_m", 7500.0)),
+            upstream_control_length_m=float(env_cfg.get("upstream_control_length_m", 1900.0)),
+            recovery_length_m=float(env_cfg.get("recovery_length_m", 300.0)),
+            start_position_fraction=float(env_cfg.get("start_position_fraction", 0.25)),
+            end_position_fraction=float(env_cfg.get("end_position_fraction", 0.25)),
+            min_control_length_m=float(env_cfg.get("min_control_length_m", 1200.0)),
             net_file=env_cfg.get("net_file", "data/sumo/base_network/test1.net.xml"),
             additional_file=env_cfg.get("additional_file", "data/sumo/base_network/E2_info.xml"),
             use_gui=bool(env_cfg.get("use_gui", False)),
         )
-        state, _ = env.reset()
+        route_seed_offset = route_seed_offsets.get(scenario.name, 0) if route_randomization_enabled else 0
+        route_seed_offsets[scenario.name] = route_seed_offset + 1
+        state, _ = env.reset(route_seed_offset=route_seed_offset)
         total = 0.0
         done = False
         while not done:

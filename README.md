@@ -157,7 +157,7 @@ The CAV longitudinal search gap is mapped from the Beta policy action through a 
 gap = vehicle_length + standstill_gap + speed * time_headway
 ```
 
-The default executable range uses 1.0-1.8 s headway, clamps to 12-80 m, and records both raw actions and mapped physical gaps. This keeps the thesis 15-25 m congestion-control region available while preventing unsafe high-speed spacing.
+The default executable range uses a CAV-parameter IDM/time-headway gap model with 1.1-2.0 s headway, clamps to 12-95 m, and records both raw actions and mapped physical gaps. This keeps low-speed congestion-control gaps available while preventing unsafe high-speed spacing.
 
 ## Outputs
 
